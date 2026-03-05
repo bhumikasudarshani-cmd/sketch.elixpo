@@ -23,6 +23,7 @@ const miniatureSize = 40;
 const placedIconSize = 40;
 let draggedShapeInitialFrameIcon = null;
 let hoveredFrameIcon = null;
+let _pendingDragChecker = null; // module-level ref so cancelDragPrep can remove it
 
 const iconSearchInput = document.getElementById('iconSearchInput');
 let searchTimeout = null;
@@ -458,6 +459,7 @@ const handleMouseDownIcon = async (e) => {
                     }
                 }
 
+                _pendingDragChecker = checkDragStartWithThreshold;
                 document.addEventListener('mousemove', checkDragStartWithThreshold);
                 document.addEventListener('mouseup', cancelDragPrep);
                 window.addEventListener('mouseup', cancelDragPrep);
@@ -682,11 +684,13 @@ function checkDragStart(event) {
     startDrag(event);
 }
 function cancelDragPrep(event) {
-    
-    document.removeEventListener('mousemove', checkDragStartWithThreshold);
+    if (_pendingDragChecker) {
+        document.removeEventListener('mousemove', _pendingDragChecker);
+        _pendingDragChecker = null;
+    }
     document.removeEventListener('mouseup', cancelDragPrep);
     window.removeEventListener('mouseup', cancelDragPrep);
-    
+
     const svg = getSVGElement();
     if (svg) {
         svg.removeEventListener('mouseup', cancelDragPrep);
