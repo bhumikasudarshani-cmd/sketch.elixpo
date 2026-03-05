@@ -10,9 +10,10 @@ import {
 import { cleanupAttachments, updateAttachedArrows } from './drawArrow.js';
 
 let codeTextSize = "25px";
-let codeTextFont = "lixCode"; 
+let codeTextFont = "lixCode";
 let codeTextColor = "#fff";
-let codeTextAlign = "left"; 
+let codeTextAlign = "left";
+let codeLanguage = "auto";
 
 let codeTextColorOptions = document.querySelectorAll(".textColorSpan");
 let codeTextFontOptions = document.querySelectorAll(".textFontSpan");
@@ -330,6 +331,7 @@ function addCodeBlock(event) {
     codeElement.setAttribute("data-initial-font", codeTextFont);
     codeElement.setAttribute("data-initial-color", codeTextColor);
     codeElement.setAttribute("data-initial-align", codeTextAlign);
+    codeElement.setAttribute("data-language", codeLanguage);
     codeElement.setAttribute("data-type", "code");
     gElement.appendChild(codeElement);
     svg.appendChild(gElement);
@@ -852,7 +854,8 @@ function renderCodeFromEditor(input, codeElement, deleteIfEmpty = false) {
         codeElement.textContent = "";
 
         // Apply syntax highlighting and create SVG tspans
-        const highlightedCode = applySyntaxHighlightingToSVG(code);
+        const storedLang = codeElement.getAttribute("data-language") || "auto";
+        const highlightedCode = applySyntaxHighlightingToSVG(code, storedLang);
         createHighlightedSVGText(highlightedCode, codeElement);
 
         // Update background rectangle to fit content
@@ -913,11 +916,19 @@ function createHighlightedSVGText(highlightResult, parentElement) {
 
 
 
-function applySyntaxHighlightingToSVG(code) {
+function applySyntaxHighlightingToSVG(code, language) {
     if (!window.hljs) {
         return { value: code, language: null };
     }
-    
+
+    const lang = language || codeLanguage;
+    if (lang && lang !== "auto") {
+        try {
+            return window.hljs.highlight(code, { language: lang });
+        } catch (e) {
+            // fallback to auto-detect
+        }
+    }
     return window.hljs.highlightAuto(code);
 }
 
@@ -2244,6 +2255,25 @@ if (!document.getElementById('code-editor-styles')) {
     document.head.appendChild(styleSheet);
 }
 
+function setCodeLanguage(lang) {
+    codeLanguage = lang;
+    // Update selected code block's language if one is selected
+    if (selectedCodeBlock) {
+        const codeElement = selectedCodeBlock.querySelector('text');
+        if (codeElement) {
+            codeElement.setAttribute("data-language", lang);
+        }
+    }
+}
+
+function getCodeLanguage() {
+    return codeLanguage;
+}
+
+function getSelectedCodeBlock() {
+    return selectedCodeBlock;
+}
+
 export {
     handleCodeMouseDown,
     handleCodeMouseMove,
@@ -2256,6 +2286,9 @@ export {
     applySyntaxHighlightingToSVG,
     createHighlightedSVGText,
     updateCodeBackground,
-    extractTextFromCodeElement
+    extractTextFromCodeElement,
+    setCodeLanguage,
+    getCodeLanguage,
+    getSelectedCodeBlock
 };
 
