@@ -8,7 +8,7 @@ import {
     setTextReferences,
     updateSelectedElement
 } from './undoAndRedo.js';
-import { cleanupAttachments } from './drawArrow.js';
+import { cleanupAttachments, updateAttachedArrows } from './drawArrow.js';
 
 let textSize = "30px";
 let textFont = "lixFont";
@@ -149,20 +149,21 @@ class TextShape {
         const currentTransform = this.group.transform.baseVal.consolidate();
         const currentX = currentTransform ? currentTransform.matrix.e : 0;
         const currentY = currentTransform ? currentTransform.matrix.f : 0;
-        
+
         this.x = currentX + dx;
         this.y = currentY + dy;
-        
+
         // Only update frame containment if we're actively dragging the shape itself
         // and not being moved by a parent frame
         if (isDragging && !this.isBeingMovedByFrame) {
             this.updateFrameContainment();
         }
-        
-        // Update attached arrows
-        if (typeof updateAttachedArrows === 'function') {
-            updateAttachedArrows(this.group);
-        }
+
+        this.updateAttachedArrows();
+    }
+
+    updateAttachedArrows() {
+        updateAttachedArrows(this);
     }
 
     updateFrameContainment() {
@@ -1431,19 +1432,7 @@ const handleTextMouseUp = function (e) {
     }
 };
 
-function updateAttachedArrows(textGroup) {
-    if (!textGroup || textGroup.type !== 'text') return;
-    
-    // Find all arrows attached to this text
-    shapes.forEach(shape => {
-        if (shape && shape.shapeName === 'arrow' && typeof shape.updateAttachments === 'function') {
-            if ((shape.attachedToStart && shape.attachedToStart.shape === textGroup) ||
-                (shape.attachedToEnd && shape.attachedToEnd.shape === textGroup)) {
-                shape.updateAttachments();
-            }
-        }
-    });
-}
+// updateAttachedArrows is imported from drawArrow.js
 
 
 textColorOptions.forEach((span) => {

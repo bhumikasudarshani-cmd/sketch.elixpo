@@ -7,7 +7,7 @@ import {
     setTextReferences,
     updateSelectedElement
 } from './undoAndRedo.js';
-import { cleanupAttachments } from './drawArrow.js';
+import { cleanupAttachments, updateAttachedArrows } from './drawArrow.js';
 
 let codeTextSize = "25px";
 let codeTextFont = "lixCode"; 
@@ -163,20 +163,21 @@ class CodeShape {
         const currentTransform = this.group.transform.baseVal.consolidate();
         const currentX = currentTransform ? currentTransform.matrix.e : 0;
         const currentY = currentTransform ? currentTransform.matrix.f : 0;
-        
+
         this.x = currentX + dx;
         this.y = currentY + dy;
-        
+
         // Only update frame containment if we're actively dragging the shape itself
         // and not being moved by a parent frame
         if (isCodeDragging && !this.isBeingMovedByFrame) {
             this.updateFrameContainment();
         }
-        
-        // Update attached arrows
-        if (typeof updateAttachedArrows === 'function') {
-            updateAttachedArrows(this.group);
-        }
+
+        this.updateAttachedArrows();
+    }
+
+    updateAttachedArrows() {
+        updateAttachedArrows(this);
     }
 
     updateFrameContainment() {
@@ -2001,21 +2002,7 @@ const handleCodeMouseDown = function (e) {
 };
 
 
-// 8. UPDATE updateAttachedArrows function:
-function updateAttachedArrows(codeGroup) {
-    // Fix: Check the data-type attribute instead of type property
-    if (!codeGroup || codeGroup.getAttribute('data-type') !== 'code-group') return;
-    
-    // Find all arrows attached to this code block
-    shapes.forEach(shape => {
-        if (shape && shape.shapeName === 'arrow' && typeof shape.updateAttachments === 'function') {
-            if ((shape.attachedToStart && shape.attachedToStart.shape === codeGroup) ||
-                (shape.attachedToEnd && shape.attachedToEnd.shape === codeGroup)) {
-                shape.updateAttachments();
-            }
-        }
-    });
-}
+// updateAttachedArrows is imported from drawArrow.js
 
 codeTextColorOptions.forEach((span) => {
     span.addEventListener("click", (event) => {

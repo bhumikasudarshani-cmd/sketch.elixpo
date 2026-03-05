@@ -219,13 +219,12 @@ const handleMainMouseUp = (e) => {
     }
 
     else if (isSelectionToolActive) {
-        // Handle multi-selection operations first - these take priority
+        // Always try multi-selection cleanup first
         if (isMultiSelecting || multiSelection.isDragging || multiSelection.isResizing || multiSelection.isRotating) {
-            if (handleMultiSelectionMouseUp(e)) {
-                return; // Multi-selection handled the event
-            }
+            handleMultiSelectionMouseUp(e);
+            return;
         }
-        
+
         // Shape-specific mouse up handling
         if (currentShape?.shapeName === 'rectangle') {
             handleMouseUpRect(e);
@@ -235,7 +234,7 @@ const handleMainMouseUp = (e) => {
             handleMouseUpCircle(e);
         } else if (currentShape?.shapeName === 'image') {
             handleMouseUpImage(e);
-        } 
+        }
         else if (currentShape?.shapeName === 'line') {
             handleMouseUpLine(e);
         }
