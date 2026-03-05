@@ -447,18 +447,21 @@ function makeTextEditable(textElement, groupElement) {
     const currentFontFamily = textElement.getAttribute("font-family") || "lixFont";
     const currentFill = textElement.getAttribute("fill") || "#fff";
     const currentAnchor = textElement.getAttribute("text-anchor") || "start";
+    input.style.minWidth = "150px";
+    input.style.minHeight = "1.5em";
     input.style.width = "auto";
     input.style.height = "auto";
     input.style.overflow = "visible";
-    input.style.whiteSpace = "nowrap";
+    input.style.whiteSpace = "pre-wrap";
+    input.style.wordBreak = "break-word";
     input.style.fontSize = currentFontSize;
     input.style.fontFamily = currentFontFamily;
     input.style.color = currentFill;
     input.style.lineHeight = "1.2em";
     input.style.textAlign = currentAnchor === "middle" ? "center" : currentAnchor === "end" ? "right" : "left";
     input.style.backgroundColor = "transparent";
-    input.style.border = "none"
-    input.style.outline = "none"
+    input.style.border = "1px dashed rgba(255,255,255,0.3)";
+    input.style.outline = "none";
     document.body.appendChild(input);
 
     const adjustHeight = () => {
@@ -476,11 +479,12 @@ function makeTextEditable(textElement, groupElement) {
     const adjustWidth = () => {
         input.style.width = 'auto';
         const maxWidth = svgRect.width - (screenPt.x);
-        if (input.scrollWidth > maxWidth) {
+        const contentWidth = Math.max(input.scrollWidth, 150);
+        if (contentWidth > maxWidth) {
             input.style.width = maxWidth + 'px';
             input.style.overflowX = 'auto';
         } else {
-            input.style.width = input.scrollWidth + 'px';
+            input.style.width = contentWidth + 'px';
             input.style.overflowX = 'hidden';
         }
     };

@@ -873,10 +873,10 @@ function renderCodeFromEditor(input, codeElement, deleteIfEmpty = false) {
         }
     }
 
-    if (selectedTool && selectedTool.classList.contains('bxs-pointer') && gElement.parentNode === svg) {
+    // After rendering code, switch to selection tool and auto-select
+    if (gElement.parentNode) {
+        switchToSelectionTool();
         selectCodeBlock(gElement);
-    } else if (selectedCodeBlock === gElement) {
-        deselectCodeBlock();
     }
 }
 
