@@ -1416,6 +1416,20 @@ function selectCodeBlock(groupElement) {
     selectedCodeBlock.classList.add("selected");
     createCodeSelectionFeedback(selectedCodeBlock);
     updateSelectedElement(selectedCodeBlock);
+
+    // Update code toggle to reflect code mode
+    const toggleSpans = document.querySelectorAll(".textCodeSpan");
+    toggleSpans.forEach(el => el.classList.remove("selected"));
+    toggleSpans.forEach(el => {
+        if (el.getAttribute("data-id") === "true") el.classList.add("selected");
+    });
+    const langSelector = document.getElementById("textLanguageSelector");
+    if (langSelector) langSelector.classList.remove("hidden");
+    const langSelect = document.getElementById("codeLanguageSelect");
+    if (langSelect) {
+        const codeEl = groupElement.querySelector('text');
+        langSelect.value = codeEl?.getAttribute("data-language") || "auto";
+    }
 }
 
 function deselectCodeBlock() {
@@ -1721,7 +1735,7 @@ const handleCodeMouseMove = (event) => {
     }
 
     // Handle cursor changes for code tool
-    if (isCodeToolActive && !isCodeDragging && !isCodeResizing && !isCodeRotating) {
+    if ((isCodeToolActive || (isTextToolActive && isTextInCodeMode)) && !isCodeDragging && !isCodeResizing && !isCodeRotating) {
         svg.style.cursor = 'text';
         
         // Frame highlighting logic for code tool
@@ -1991,7 +2005,7 @@ const handleCodeMouseDown = function (e) {
             deselectCodeBlock();
         }
 
-    } else if ((isCodeToolActive || (isTextToolActive && isTextInCodeMode))  && e.button === 0) {
+    } else if ((isCodeToolActive || isTextToolActive)  && e.button === 0) {
         if (targetGroup) {
             const codeElement = targetGroup.querySelector('text');
 
