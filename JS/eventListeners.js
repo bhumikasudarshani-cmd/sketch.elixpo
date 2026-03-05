@@ -27,16 +27,22 @@ const handleMainMouseDown = (e) => {
         handleFreehandMouseDown(e);
     }
     else if (isTextToolActive) {
-        handleTextMouseDown(e);
+        // Text tool handles both text and code shapes based on target and mode
+        const targetCodeGroup = e.target.closest('g[data-type="code-group"]');
+        const targetTextGroup = e.target.closest('g[data-type="text-group"]');
+        if (targetCodeGroup && !targetTextGroup) {
+            handleCodeMouseDown(e);
+        } else if (isTextInCodeMode && !targetTextGroup && !targetCodeGroup) {
+            handleCodeMouseDown(e);
+        } else {
+            handleTextMouseDown(e);
+        }
     }
     else if (isFrameToolActive) {
         handleMouseDownFrame(e);
     }
     else if (isIconToolActive) {
         handleMouseDownIcon(e);
-    }
-    else if (isCodeToolActive) {
-        handleCodeMouseDown(e);
     }
     else if (isSelectionToolActive) {
         // Try multi-selection first when selection tool is active
@@ -122,15 +128,13 @@ const handleMainMouseMove = (e) => {
     }
     else if (isTextToolActive) {
         handleTextMouseMove(e);
+        handleCodeMouseMove(e);
     }
     else if (isFrameToolActive) {
         handleMouseMoveFrame(e);
     }
     else if (isIconToolActive) {
         handleMouseMoveIcon(e);
-    }
-    else if (isCodeToolActive) {
-        handleCodeMouseMove(e);
     }
     else if (isSelectionToolActive) {
         // Handle multi-selection operations first - these take priority
@@ -207,15 +211,13 @@ const handleMainMouseUp = (e) => {
     }
     else if (isTextToolActive) {
         handleTextMouseUp(e);
+        handleCodeMouseUp(e);
     }
     else if (isFrameToolActive) {
         handleMouseUpFrame(e);
     }
     else if (isIconToolActive) {
         handleMouseUpIcon(e);
-    }
-    else if (isCodeToolActive) {
-        handleCodeMouseUp(e);
     }
 
     else if (isSelectionToolActive) {

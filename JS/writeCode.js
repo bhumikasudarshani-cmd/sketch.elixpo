@@ -1980,7 +1980,7 @@ const handleCodeMouseDown = function (e) {
             deselectCodeBlock();
         }
 
-    } else if (isCodeToolActive  && e.button === 0) { 
+    } else if ((isCodeToolActive || (isTextToolActive && isTextInCodeMode))  && e.button === 0) {
         if (targetGroup) {
             const codeElement = targetGroup.querySelector('text');
 
@@ -2244,5 +2244,18 @@ if (!document.getElementById('code-editor-styles')) {
     document.head.appendChild(styleSheet);
 }
 
-export { handleCodeMouseDown, handleCodeMouseMove, handleCodeMouseUp };
+export {
+    handleCodeMouseDown,
+    handleCodeMouseMove,
+    handleCodeMouseUp,
+    addCodeBlock,
+    wrapCodeElement,
+    selectCodeBlock,
+    deselectCodeBlock,
+    makeCodeEditable,
+    applySyntaxHighlightingToSVG,
+    createHighlightedSVGText,
+    updateCodeBackground,
+    extractTextFromCodeElement
+};
 
