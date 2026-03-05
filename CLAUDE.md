@@ -144,6 +144,15 @@ npm run backend:dev  # Backend only (nodemon, port 3002)
 7. **No error handling** in many places
 8. **Global state fragility** - tool flags can conflict
 
+## Arrow Attachment Architecture
+
+Arrows store references to shape **wrapper objects** (not DOM elements). All shape types (rect, circle, text, code, image, icon, freehand, line, frame) support arrow attachment via:
+- `findNearbyShape()` in drawArrow.js dispatches by `shape.shapeName`
+- `calculateAttachedPoint()` recalculates position when shape moves
+- `updateAttachedArrows()` global function accepts either wrapper or DOM element (does lookup)
+- Each shape class has an instance `updateAttachedArrows()` method that calls the global one with `this`
+- `cleanupAttachments()` handles detaching arrows when any shape is deleted
+
 ## Pending Features (from project files)
 
 - Save/load sketches (localStorage/IndexedDB/server)
