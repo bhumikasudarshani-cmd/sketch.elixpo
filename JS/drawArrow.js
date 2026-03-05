@@ -1838,8 +1838,15 @@ if (isDrawingArrow && currentArrow) {
 
         // Push create action for undo/redo
         pushCreateAction(currentArrow);
+
+        // Auto-select the drawn arrow and switch to selection tool
+        const drawnArrow = currentArrow;
+        const selectBtn = document.querySelector(".bxs-pointer");
+        if (selectBtn) selectBtn.click();
+        currentShape = drawnArrow;
+        drawnArrow.selectArrow();
     }
-    
+
     // Clear frame highlighting
     if (hoveredFrameArrow) {
         hoveredFrameArrow.removeHighlight();
