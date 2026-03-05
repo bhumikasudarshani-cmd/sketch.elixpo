@@ -195,6 +195,12 @@ class IconShape {
 
     removeSelection(params) {
         removeSelection();
+        this.isSelected = false;
+    }
+
+    // Called by handleMultiSelectionMouseDown — same as selectShape
+    addAnchors() {
+        selectIcon({ target: this.element, stopPropagation: () => { } });
     }
 
     selectShape() {
@@ -470,6 +476,8 @@ const handleMouseDownIcon = async (e) => {
         return;
     }
 
+    let placedIconShape = null;
+
     try {
         const svg = getSVGElement();
         if (!svg) {
@@ -551,6 +559,7 @@ const handleMouseDownIcon = async (e) => {
         svg.appendChild(finalIconGroup);
 
         const iconShape = wrapIconElement(finalIconGroup);
+        placedIconShape = iconShape;
 
         if (typeof shapes !== 'undefined' && Array.isArray(shapes)) {
             shapes.push(iconShape);
@@ -586,6 +595,15 @@ const handleMouseDownIcon = async (e) => {
         iconToPlace = null;
         isIconToolActive = false;
         document.body.style.cursor = 'default';
+    }
+
+    // Auto-select placed icon and switch to selection tool
+    if (placedIconShape) {
+        const selectBtn = document.querySelector(".bxs-pointer");
+        if (selectBtn) selectBtn.click();
+        currentShape = placedIconShape;
+        currentShape.isSelected = true;
+        placedIconShape.selectShape();
     }
 };
 
@@ -1465,6 +1483,31 @@ function addIconClickListeners() {
         });
     });
 }
+
+// Category filter dropdowns
+document.querySelectorAll('.choiceBoxes').forEach(box => {
+    box.addEventListener('click', async () => {
+        // Toggle selected state
+        const wasSelected = box.classList.contains('selected');
+        document.querySelectorAll('.choiceBoxes').forEach(b => b.classList.remove('selected'));
+        if (!wasSelected) {
+            box.classList.add('selected');
+            const label = box.querySelector('p')?.textContent.trim() || '';
+            const queryMap = {
+                'General Icons': 'icon',
+                'Tech Icons': 'tech programming',
+                'Devops Icons': 'devops cloud server'
+            };
+            const query = queryMap[label] || label;
+            iconSearchInput.value = '';
+            await searchAndRenderIcons(query);
+        } else {
+            // Deselected — restore default feed
+            iconSearchInput.value = '';
+            await renderIconsFromServer();
+        }
+    });
+});
 
 iconSearchInput.addEventListener('input', async (e) => {
     const query = e.target.value.trim();
