@@ -1,7 +1,7 @@
 "use client"
 
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
-import ShapeSidebar from './ShapeSidebar'
+import ShapeSidebar, { PropertySection, Divider } from './ShapeSidebar'
 import { useState } from 'react'
 
 const STROKE_COLORS = [
@@ -72,31 +72,28 @@ const FILLS = [
   },
 ]
 
-function ColorSwatches({ colors, selected, onSelect, label }) {
+function ColorSwatches({ colors, selected, onSelect }) {
   return (
-    <div className="mb-3">
-      <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">{label}</p>
-      <div className="flex items-center gap-1.5">
-        {colors.map((c) => (
-          <button
-            key={c.color}
-            title={c.label}
-            onClick={() => onSelect(c.color)}
-            className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-              selected === c.color
-                ? 'border-accent scale-110'
-                : 'border-border hover:border-border-light'
-            } ${c.color === 'transparent' ? 'bg-surface-dark' : ''}`}
-            style={c.color !== 'transparent' ? { backgroundColor: c.color } : undefined}
-          >
-            {c.color === 'transparent' && (
-              <svg className="w-full h-full text-text-dim" viewBox="0 0 20 20">
-                <line x1="3" y1="17" x2="17" y2="3" stroke="currentColor" strokeWidth="1.5" />
-              </svg>
-            )}
-          </button>
-        ))}
-      </div>
+    <div className="flex items-center gap-1.5">
+      {colors.map((c) => (
+        <button
+          key={c.color}
+          title={c.label}
+          onClick={() => onSelect(c.color)}
+          className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+            selected === c.color
+              ? 'border-accent scale-110'
+              : 'border-border hover:border-border-light'
+          } ${c.color === 'transparent' ? 'bg-surface-dark' : ''}`}
+          style={c.color !== 'transparent' ? { backgroundColor: c.color } : undefined}
+        >
+          {c.color === 'transparent' && (
+            <svg className="w-full h-full text-text-dim" viewBox="0 0 20 20">
+              <line x1="3" y1="17" x2="17" y2="3" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          )}
+        </button>
+      ))}
     </div>
   )
 }
@@ -114,29 +111,26 @@ export default function CircleSidebar() {
   const [fillStyle, setFillStyle] = useState('hachure')
 
   return (
-    <ShapeSidebar visible={activeTool === TOOLS.CIRCLE} title="Circle">
-      <ColorSwatches
-        colors={STROKE_COLORS}
-        selected={strokeColor}
-        onSelect={setStrokeColor}
-        label="Stroke"
-      />
-      <ColorSwatches
-        colors={BG_COLORS}
-        selected={bgColor}
-        onSelect={setBgColor}
-        label="Background"
-      />
+    <ShapeSidebar visible={activeTool === TOOLS.CIRCLE}>
+      <PropertySection label="Stroke">
+        <ColorSwatches colors={STROKE_COLORS} selected={strokeColor} onSelect={setStrokeColor} />
+      </PropertySection>
 
-      {/* Thickness */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Thickness</p>
+      <Divider />
+
+      <PropertySection label="Background">
+        <ColorSwatches colors={BG_COLORS} selected={bgColor} onSelect={setBgColor} />
+      </PropertySection>
+
+      <Divider />
+
+      <PropertySection label="Thickness">
         <div className="flex items-center gap-1">
           {THICKNESSES.map((t) => (
             <button
               key={t.value}
               onClick={() => setThickness(t.value)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] transition-all duration-200 ${
+              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
                 thickness === t.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -146,18 +140,18 @@ export default function CircleSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Style */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Style</p>
+      <Divider />
+
+      <PropertySection label="Style">
         <div className="flex items-center gap-1">
           {STYLES.map((s) => (
             <button
               key={s.value}
               title={s.label}
               onClick={() => setLineStyle(s.value)}
-              className={`flex-1 py-2 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              className={`px-2 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 lineStyle === s.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -167,18 +161,18 @@ export default function CircleSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Fill */}
-      <div>
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Fill</p>
+      <Divider />
+
+      <PropertySection label="Fill">
         <div className="flex items-center gap-1">
           {FILLS.map((f) => (
             <button
               key={f.value}
               title={f.label}
               onClick={() => setFillStyle(f.value)}
-              className={`flex-1 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              className={`px-1.5 py-1 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 fillStyle === f.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -188,7 +182,7 @@ export default function CircleSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
     </ShapeSidebar>
   )
 }

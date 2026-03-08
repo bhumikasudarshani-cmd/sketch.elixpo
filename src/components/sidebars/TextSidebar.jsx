@@ -1,7 +1,7 @@
 "use client"
 
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
-import ShapeSidebar from './ShapeSidebar'
+import ShapeSidebar, { PropertySection, Divider } from './ShapeSidebar'
 import { useState } from 'react'
 
 const TEXT_COLORS = [
@@ -32,29 +32,6 @@ const LANGUAGES = [
   'sql', 'bash', 'json', 'yaml', 'markdown',
 ]
 
-function ColorSwatches({ colors, selected, onSelect, label }) {
-  return (
-    <div className="mb-3">
-      <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">{label}</p>
-      <div className="flex items-center gap-1.5">
-        {colors.map((c) => (
-          <button
-            key={c.color}
-            title={c.label}
-            onClick={() => onSelect(c.color)}
-            className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-              selected === c.color
-                ? 'border-accent scale-110'
-                : 'border-border hover:border-border-light'
-            }`}
-            style={{ backgroundColor: c.color }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function TextSidebar() {
   const activeTool = useSketchStore((s) => s.activeTool)
   const [textColor, setTextColor] = useState('#fff')
@@ -68,55 +45,69 @@ export default function TextSidebar() {
   const visible = activeTool === TOOLS.TEXT || activeTool === TOOLS.CODE
 
   return (
-    <ShapeSidebar visible={visible} title="Text">
-      <ColorSwatches
-        colors={TEXT_COLORS}
-        selected={textColor}
-        onSelect={setTextColor}
-        label="Color"
-      />
+    <ShapeSidebar visible={visible}>
+      <PropertySection label="Color">
+        <div className="flex items-center gap-1.5">
+          {TEXT_COLORS.map((c) => (
+            <button
+              key={c.color}
+              title={c.label}
+              onClick={() => setTextColor(c.color)}
+              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+                textColor === c.color
+                  ? 'border-accent scale-110'
+                  : 'border-border hover:border-border-light'
+              }`}
+              style={{ backgroundColor: c.color }}
+            />
+          ))}
+        </div>
+      </PropertySection>
 
-      {/* Font selector */}
-      <div className="mb-3">
-        <button
-          onClick={() => setFontExpanded(!fontExpanded)}
-          className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-text-secondary text-xs hover:bg-surface-hover transition-all duration-200"
-        >
-          <span style={{ fontFamily: font }}>{font}</span>
-          <i className={`bx bx-chevron-${fontExpanded ? 'up' : 'down'} text-sm`} />
-        </button>
-        {fontExpanded && (
-          <div className="mt-1 flex flex-col gap-0.5">
-            {FONTS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => {
-                  setFont(f.value)
-                  setFontExpanded(false)
-                }}
-                className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all duration-200 ${
-                  font === f.value
-                    ? 'bg-surface-active text-text-primary'
-                    : 'text-text-muted hover:bg-surface-hover'
-                }`}
-                style={{ fontFamily: f.value }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <Divider />
 
-      {/* Font size */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Size</p>
+      <PropertySection label="Font">
+        <div className="relative">
+          <button
+            onClick={() => setFontExpanded(!fontExpanded)}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-text-secondary text-xs hover:bg-surface-hover transition-all duration-200"
+          >
+            <span style={{ fontFamily: font }}>{font}</span>
+            <i className={`bx bx-chevron-${fontExpanded ? 'up' : 'down'} text-sm`} />
+          </button>
+          {fontExpanded && (
+            <div className="absolute top-full left-0 mt-1 bg-surface-dark border border-border-light rounded-lg z-10 min-w-[100px]">
+              {FONTS.map((f) => (
+                <button
+                  key={f.value}
+                  onClick={() => {
+                    setFont(f.value)
+                    setFontExpanded(false)
+                  }}
+                  className={`w-full text-left px-2 py-1.5 text-xs transition-all duration-200 first:rounded-t-lg last:rounded-b-lg ${
+                    font === f.value
+                      ? 'bg-surface-active text-text-primary'
+                      : 'text-text-muted hover:bg-surface-hover'
+                  }`}
+                  style={{ fontFamily: f.value }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </PropertySection>
+
+      <Divider />
+
+      <PropertySection label="Size">
         <div className="flex items-center gap-1">
           {FONT_SIZES.map((s) => (
             <button
               key={s.value}
               onClick={() => setFontSize(s.value)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] transition-all duration-200 ${
+              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
                 fontSize === s.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -126,68 +117,69 @@ export default function TextSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Code mode toggle */}
-      <div className="mb-3">
+      <Divider />
+
+      <PropertySection label="Code">
         <button
           onClick={() => setCodeMode(!codeMode)}
-          className={`w-full flex items-center justify-between px-2 py-2 rounded-lg text-xs transition-all duration-200 ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs transition-all duration-200 ${
             codeMode
               ? 'bg-surface-active text-text-primary'
               : 'text-text-muted hover:bg-surface-hover'
           }`}
         >
-          <span className="flex items-center gap-2">
-            <i className="bx bx-code-alt text-sm" />
-            Code Mode
-          </span>
+          <i className="bx bx-code-alt text-sm" />
           <div
-            className={`w-8 h-4 rounded-full transition-all duration-200 relative ${
+            className={`w-7 h-3.5 rounded-full transition-all duration-200 relative ${
               codeMode ? 'bg-accent-blue' : 'bg-surface-dark'
             }`}
           >
             <div
-              className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all duration-200 ${
-                codeMode ? 'left-4' : 'left-0.5'
+              className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white transition-all duration-200 ${
+                codeMode ? 'left-3.5' : 'left-0.5'
               }`}
             />
           </div>
         </button>
-      </div>
+      </PropertySection>
 
-      {/* Language selector (shown when code mode is on) */}
       {codeMode && (
-        <div className="relative">
-          <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Language</p>
-          <button
-            onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-            className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-text-secondary text-xs bg-surface-dark border border-border hover:border-border-light transition-all duration-200"
-          >
-            {language}
-            <i className={`bx bx-chevron-${langDropdownOpen ? 'up' : 'down'} text-sm`} />
-          </button>
-          {langDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-surface-dark border border-border-light rounded-lg max-h-[160px] overflow-y-auto no-scrollbar z-10">
-              {LANGUAGES.map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => {
-                    setLanguage(lang)
-                    setLangDropdownOpen(false)
-                  }}
-                  className={`w-full text-left px-2 py-1.5 text-xs transition-all duration-200 ${
-                    language === lang
-                      ? 'bg-surface-active text-text-primary'
-                      : 'text-text-muted hover:bg-surface-hover'
-                  }`}
-                >
-                  {lang}
-                </button>
-              ))}
+        <>
+          <Divider />
+          <PropertySection label="Language">
+            <div className="relative">
+              <button
+                onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-text-secondary text-xs bg-surface-dark border border-border hover:border-border-light transition-all duration-200"
+              >
+                {language}
+                <i className={`bx bx-chevron-${langDropdownOpen ? 'up' : 'down'} text-sm`} />
+              </button>
+              {langDropdownOpen && (
+                <div className="absolute bottom-full left-0 mb-1 bg-surface-dark border border-border-light rounded-lg max-h-[160px] overflow-y-auto no-scrollbar z-10 min-w-[120px]">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setLanguage(lang)
+                        setLangDropdownOpen(false)
+                      }}
+                      className={`w-full text-left px-2 py-1.5 text-xs transition-all duration-200 first:rounded-t-lg last:rounded-b-lg ${
+                        language === lang
+                          ? 'bg-surface-active text-text-primary'
+                          : 'text-text-muted hover:bg-surface-hover'
+                      }`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </PropertySection>
+        </>
       )}
     </ShapeSidebar>
   )

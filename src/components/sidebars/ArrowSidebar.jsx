@@ -1,7 +1,7 @@
 "use client"
 
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
-import ShapeSidebar from './ShapeSidebar'
+import ShapeSidebar, { PropertySection, Divider } from './ShapeSidebar'
 import { useState } from 'react'
 
 const STROKE_COLORS = [
@@ -71,29 +71,6 @@ const CURVATURES = [
   { value: 40, label: 'High' },
 ]
 
-function ColorSwatches({ colors, selected, onSelect, label }) {
-  return (
-    <div className="mb-3">
-      <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">{label}</p>
-      <div className="flex items-center gap-1.5">
-        {colors.map((c) => (
-          <button
-            key={c.color}
-            title={c.label}
-            onClick={() => onSelect(c.color)}
-            className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-              selected === c.color
-                ? 'border-accent scale-110'
-                : 'border-border hover:border-border-light'
-            }`}
-            style={{ backgroundColor: c.color }}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function SvgIcon({ svg }) {
   return <span dangerouslySetInnerHTML={{ __html: svg }} />
 }
@@ -108,17 +85,15 @@ export default function ArrowSidebar() {
   const [curvature, setCurvature] = useState(8)
 
   return (
-    <ShapeSidebar visible={activeTool === TOOLS.ARROW} title="Arrow">
-      {/* Head Style */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Head</p>
+    <ShapeSidebar visible={activeTool === TOOLS.ARROW}>
+      <PropertySection label="Head">
         <div className="flex items-center gap-1">
           {HEAD_STYLES.map((h) => (
             <button
               key={h.value}
               title={h.label}
               onClick={() => setHeadStyle(h.value)}
-              className={`flex-1 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              className={`px-1.5 py-1 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 headStyle === h.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -128,24 +103,37 @@ export default function ArrowSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      <ColorSwatches
-        colors={STROKE_COLORS}
-        selected={strokeColor}
-        onSelect={setStrokeColor}
-        label="Stroke"
-      />
+      <Divider />
 
-      {/* Thickness */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Thickness</p>
+      <PropertySection label="Stroke">
+        <div className="flex items-center gap-1.5">
+          {STROKE_COLORS.map((c) => (
+            <button
+              key={c.color}
+              title={c.label}
+              onClick={() => setStrokeColor(c.color)}
+              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
+                strokeColor === c.color
+                  ? 'border-accent scale-110'
+                  : 'border-border hover:border-border-light'
+              }`}
+              style={{ backgroundColor: c.color }}
+            />
+          ))}
+        </div>
+      </PropertySection>
+
+      <Divider />
+
+      <PropertySection label="Thickness">
         <div className="flex items-center gap-1">
           {THICKNESSES.map((t) => (
             <button
               key={t.value}
               onClick={() => setThickness(t.value)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] transition-all duration-200 ${
+              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
                 thickness === t.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -155,18 +143,18 @@ export default function ArrowSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Outline Style */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Outline</p>
+      <Divider />
+
+      <PropertySection label="Outline">
         <div className="flex items-center gap-1">
           {OUTLINE_STYLES.map((s) => (
             <button
               key={s.value}
               title={s.label}
               onClick={() => setOutlineStyle(s.value)}
-              className={`flex-1 py-2 flex items-center justify-center rounded-lg transition-all duration-200 ${
+              className={`px-2 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
                 outlineStyle === s.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -176,17 +164,17 @@ export default function ArrowSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Arrow Type */}
-      <div className="mb-3">
-        <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Type</p>
+      <Divider />
+
+      <PropertySection label="Type">
         <div className="flex items-center gap-1">
           {ARROW_TYPES.map((a) => (
             <button
               key={a.value}
               onClick={() => setArrowType(a.value)}
-              className={`flex-1 py-1.5 rounded-lg text-[10px] transition-all duration-200 ${
+              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
                 arrowType === a.value
                   ? 'bg-surface-active text-text-primary'
                   : 'text-text-muted hover:bg-surface-hover'
@@ -196,28 +184,29 @@ export default function ArrowSidebar() {
             </button>
           ))}
         </div>
-      </div>
+      </PropertySection>
 
-      {/* Curvature */}
       {arrowType === 'curved' && (
-        <div>
-          <p className="text-text-dim text-[10px] uppercase tracking-wider mb-1.5">Curvature</p>
-          <div className="flex items-center gap-1">
-            {CURVATURES.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setCurvature(c.value)}
-                className={`flex-1 py-1.5 rounded-lg text-[10px] transition-all duration-200 ${
-                  curvature === c.value
-                    ? 'bg-surface-active text-text-primary'
-                    : 'text-text-muted hover:bg-surface-hover'
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <>
+          <Divider />
+          <PropertySection label="Curvature">
+            <div className="flex items-center gap-1">
+              {CURVATURES.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setCurvature(c.value)}
+                  className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
+                    curvature === c.value
+                      ? 'bg-surface-active text-text-primary'
+                      : 'text-text-muted hover:bg-surface-hover'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </PropertySection>
+        </>
       )}
     </ShapeSidebar>
   )
