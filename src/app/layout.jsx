@@ -1,17 +1,8 @@
-import '../styles/canvasStroke.css'
-import '../styles/canvasTools.css'
-import '../styles/menu.css'
-import '../styles/squareSidebar.css'
-import '../styles/circleSidebar.css'
-import '../styles/lineSidebar.css'
-import '../styles/paintbrushSidebar.css'
-import '../styles/arrowSidebar.css'
-import '../styles/textToolBar.css'
-import '../styles/frameSidebar.css'
-import '../styles/writeText.css'
+import './globals.css'
 
 export const metadata = {
   title: 'LixSketch',
+  description: 'Open-source alternative to app.eraser.io - Sketch canvas + Docs editor',
   icons: {
     icon: '/Images/logo.png',
   },
@@ -19,15 +10,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-        <link href="https://cdn.boxicons.com/fonts/basic/boxicons.min.css" rel="stylesheet" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark-dimmed.min.css" />
       </head>
-      <body>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   )
 }
