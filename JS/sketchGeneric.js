@@ -383,6 +383,13 @@ document.addEventListener('keydown', (e) => {
       return;
     }
 
+    // Command palette / Shortcuts: Ctrl+/
+    if (key === '/') {
+      e.preventDefault();
+      toggleShortcutsModal();
+      return;
+    }
+
     return; // Don't process tool shortcuts when Ctrl is held
   }
 
@@ -395,8 +402,13 @@ document.addEventListener('keydown', (e) => {
       return;
     }
 
-    // Escape: deselect all
+    // Escape: close shortcuts modal if open, otherwise deselect all
     if (e.key === 'Escape') {
+      const modal = document.getElementById('shortcutsModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        modal.classList.add('hidden');
+        return;
+      }
       if (typeof currentShape !== 'undefined' && currentShape && typeof currentShape.removeSelection === 'function') {
         currentShape.removeSelection();
         currentShape = null;
@@ -406,6 +418,21 @@ document.addEventListener('keydown', (e) => {
       return;
     }
   }
+});
+
+// --- Shortcuts modal toggle ---
+function toggleShortcutsModal() {
+  const modal = document.getElementById('shortcutsModal');
+  if (!modal) return;
+  modal.classList.toggle('hidden');
+}
+
+// Close modal when clicking overlay or close button
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('shortcutsModal');
+  if (!modal) return;
+  modal.querySelector('.shortcuts-overlay').addEventListener('click', () => modal.classList.add('hidden'));
+  modal.querySelector('.shortcuts-close').addEventListener('click', () => modal.classList.add('hidden'));
 });
 
 // --- Group selected shapes into a frame ---
