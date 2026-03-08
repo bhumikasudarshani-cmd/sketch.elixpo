@@ -86,7 +86,44 @@ export default function useKeyboardShortcuts() {
       }
     }
 
+    // Prevent browser zoom on Ctrl+scroll, route to canvas zoom
+    function handleWheel(e) {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault()
+        const store = useSketchStore.getState()
+        const delta = e.deltaY > 0 ? -0.1 : 0.1
+        store.setZoom(store.zoom + delta)
+
+        // Update the SVG viewBox if the engine has set up the global
+        if (typeof window !== 'undefined' && window.currentZoom !== undefined) {
+          window.currentZoom = store.zoom + delta
+          const svgEl = document.getElementById('freehand-canvas')
+          if (svgEl) {
+            const w = window.innerWidth / window.currentZoom
+            const h = window.innerHeight / window.currentZoom
+            if (window.currentViewBox) {
+              window.currentViewBox.width = w
+              window.currentViewBox.height = h
+              svgEl.setAttribute(
+                'viewBox',
+                `${window.currentViewBox.x} ${window.currentViewBox.y} ${w} ${h}`
+              )
+            }
+          }
+          // Update zoom display if it exists
+          const zoomSpan = document.getElementById('zoomPercent')
+          if (zoomSpan) {
+            zoomSpan.innerText = Math.round(window.currentZoom * 100) + '%'
+          }
+        }
+      }
+    }
+
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener('wheel', handleWheel, { passive: false })
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('wheel', handleWheel)
+    }
   }, [])
 }
