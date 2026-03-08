@@ -530,13 +530,27 @@ const toolShortcutMap = {
 
 // --- Central keyboard shortcut handler ---
 document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+
+  // --- Global Ctrl shortcuts that work even when typing ---
+  if (e.ctrlKey || e.metaKey) {
+    if (key === 's') {
+      e.preventDefault();
+      toggleSaveAsModal();
+      return;
+    }
+    if (key === '/') {
+      e.preventDefault();
+      toggleShortcutsModal();
+      return;
+    }
+  }
+
   // Skip if user is typing in an input, textarea, or contenteditable
   const tag = e.target.tagName.toLowerCase();
   if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
   // Skip if a text/code editor overlay is active
   if (document.querySelector('.text-edit-overlay:not(.hidden)')) return;
-
-  const key = e.key.toLowerCase();
 
   // --- Ctrl/Cmd shortcuts ---
   if (e.ctrlKey || e.metaKey) {
@@ -579,20 +593,6 @@ document.addEventListener('keydown', (e) => {
     if (key === 'd') {
       e.preventDefault();
       duplicateSelection();
-      return;
-    }
-
-    // Save As: Ctrl+S
-    if (key === 's') {
-      e.preventDefault();
-      toggleSaveAsModal();
-      return;
-    }
-
-    // Command palette / Shortcuts: Ctrl+/
-    if (key === '/') {
-      e.preventDefault();
-      toggleShortcutsModal();
       return;
     }
 

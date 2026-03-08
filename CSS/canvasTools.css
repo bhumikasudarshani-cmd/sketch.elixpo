@@ -527,11 +527,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    visibility: visible;
 }
 .shortcuts-modal.hidden {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
 }
 .shortcuts-overlay {
     position: absolute;
@@ -647,11 +649,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    visibility: visible;
 }
 .save-modal.hidden {
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
 }
 .save-modal-overlay {
     position: absolute;
