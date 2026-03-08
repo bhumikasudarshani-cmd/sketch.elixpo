@@ -1,3 +1,6 @@
+/* eslint-disable */
+// Code block resize utilities - copied from resizeCode.js
+
 
 
 

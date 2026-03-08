@@ -1,3 +1,9 @@
+/* eslint-disable */
+// Eraser tool - copied from eraserTool.js
+// Depends on globals: svg, isEraserToolActive, isErasing, targetedElements
+// Depends on: eraserTrail functions (createEraserTrail, updateEraserTrail, fadeOutEraserTrail)
+// Depends on: history, redoStack, clearAllSelections, updateUndoRedoButtons, eraserCursorSVG
+
 // --- Function to highlight elements under the eraser ---
 function handleElementHighlight(clientX, clientY) {
   if (!isErasing) return;

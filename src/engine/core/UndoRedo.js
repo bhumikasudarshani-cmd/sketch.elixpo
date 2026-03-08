@@ -1,3 +1,6 @@
+/* eslint-disable */
+// Undo/Redo system - copied from undoAndRedo.js
+
 // Stacks for undo/redo
 const undoStack = [];
 const redoStack = [];

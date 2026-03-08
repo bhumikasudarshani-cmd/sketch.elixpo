@@ -1,3 +1,7 @@
+/* eslint-disable */
+// Eraser trail visualization - copied from eraserTrail.js
+// Depends on globals: svg, currentZoom
+
 let isErasing = false;
 let eraserPath = null;
 let eraserPoints = [];

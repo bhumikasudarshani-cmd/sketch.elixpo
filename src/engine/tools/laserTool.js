@@ -1,3 +1,7 @@
+/* eslint-disable */
+// Laser tool - copied from laserTool.js
+// Depends on globals: svg, currentZoom, selectedTool, lazerCursor
+
 let isDrawing = false;
 let lasers = []; 
 let fadingLasers = []; 

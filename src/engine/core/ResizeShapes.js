@@ -1,3 +1,7 @@
+/* eslint-disable */
+// Shape resize utilities - copied from resizeShapes.js
+// Depends on globals: svg, rough, selectedElements
+
 let selectedElements = [];
 let selectionAnchors = [];
 let isDraggingSelected = false;

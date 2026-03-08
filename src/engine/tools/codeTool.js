@@ -1,3 +1,5 @@
+/* eslint-disable */
+// Code tool event handlers - extracted from writeCode.js
 import {
     pushCreateAction,
     pushDeleteActionWithAttachments,
@@ -6,8 +8,8 @@ import {
     pushFrameAttachmentAction,
     setTextReferences,
     updateSelectedElement
-} from './undoAndRedo.js';
-import { cleanupAttachments, updateAttachedArrows } from './drawArrow.js';
+} from '../../../JS/undoAndRedo.js';
+import { cleanupAttachments, updateAttachedArrows } from '../../../JS/drawArrow.js';
 
 let codeTextSize = "25px";
 let codeTextFont = "lixCode";
@@ -42,217 +44,9 @@ let initialCodeGroupTy = 0;
 let draggedCodeInitialFrame = null;
 let hoveredCodeFrame = null;
 
+
 setTextReferences(selectedCodeBlock, updateCodeSelectionFeedback, svg);
 
-class CodeShape {
-    constructor(groupElement) {
-        this.group = groupElement;
-        this.shapeName = 'code';
-        this.shapeID = groupElement.getAttribute('id') || `code-${String(Date.now()).slice(0, 8)}-${Math.floor(Math.random() * 10000)}`;
-        
-        // Frame attachment properties
-        this.parentFrame = null;
-        
-        // Update group attributes
-        this.group.setAttribute('type', 'code');
-        this.group.shapeName = 'code';
-        this.group.shapeID = this.shapeID;
-    }
-    
-    // Position and dimension properties for frame compatibility
-    get x() {
-        const transform = this.group.transform.baseVal.consolidate();
-        return transform ? transform.matrix.e : parseFloat(this.group.getAttribute('data-x')) || 0;
-    }
-    
-    set x(value) {
-        const transform = this.group.transform.baseVal.consolidate();
-        const currentY = transform ? transform.matrix.f : parseFloat(this.group.getAttribute('data-y')) || 0;
-        const rotation = extractRotationFromTransform(this.group) || 0;
-        const codeBlockContainer = this.group.querySelector('foreignObject');
-        if (codeBlockContainer) {
-            const bbox = codeBlockContainer.getBBox();
-            const centerX = bbox.x + bbox.width / 2;
-            const centerY = bbox.y + bbox.height / 2;
-            this.group.setAttribute('transform', `translate(${value}, ${currentY}) rotate(${rotation}, ${centerX}, ${centerY})`);
-        } else {
-            this.group.setAttribute('transform', `translate(${value}, ${currentY})`);
-        }
-        this.group.setAttribute('data-x', value);
-    }
-    
-    get y() {
-        const transform = this.group.transform.baseVal.consolidate();
-        return transform ? transform.matrix.f : parseFloat(this.group.getAttribute('data-y')) || 0;
-    }
-    
-    set y(value) {
-        const transform = this.group.transform.baseVal.consolidate();
-        const currentX = transform ? transform.matrix.e : parseFloat(this.group.getAttribute('data-x')) || 0;
-        const rotation = extractRotationFromTransform(this.group) || 0;
-        const codeBlockContainer = this.group.querySelector('foreignObject');
-        if (codeBlockContainer) {
-            const bbox = codeBlockContainer.getBBox();
-            const centerX = bbox.x + bbox.width / 2;
-            const centerY = bbox.y + bbox.height / 2;
-            this.group.setAttribute('transform', `translate(${currentX}, ${value}) rotate(${rotation}, ${centerX}, ${centerY})`);
-        } else {
-            this.group.setAttribute('transform', `translate(${currentX}, ${value})`);
-        }
-        this.group.setAttribute('data-y', value);
-    }
-    
-    get width() {
-        const codeElement = this.group.querySelector('text');
-        if (codeElement) {
-            return codeElement.getBBox().width;
-        }
-        return 0;
-    }
-    
-    set width(value) {
-        const codeBlockContainer = this.group.querySelector('foreignObject');
-        if (codeBlockContainer) {
-            codeBlockContainer.setAttribute('width', value);
-            // This might trigger a reflow in the foreignObject content
-            const codeEditor = codeBlockContainer.querySelector('.svg-code-editor');
-            if (codeEditor) {
-                codeEditor.style.width = `${value}px`;
-                adjustCodeEditorSize(codeEditor);
-            }
-        }
-    }
-    
-    get height() {
-        const codeElement = this.group.querySelector('text');
-        if (codeElement) {
-            return codeElement.getBBox().height;
-        }
-        return 0;
-    }
-    
-    set height(value) {
-        const codeBlockContainer = this.group.querySelector('foreignObject');
-        if (codeBlockContainer) {
-            codeBlockContainer.setAttribute('height', value);
-            const codeEditor = codeBlockContainer.querySelector('.svg-code-editor');
-            if (codeEditor) {
-                codeEditor.style.height = `${value}px`;
-                adjustCodeEditorSize(codeEditor);
-            }
-        }
-    }
-    
-    get rotation() {
-        return extractRotationFromTransform(this.group) || 0;
-    }
-    
-    set rotation(value) {
-        const currentTransform = this.group.transform.baseVal.consolidate();
-        const currentX = currentTransform ? currentTransform.matrix.e : 0;
-        const currentY = currentTransform ? currentTransform.matrix.f : 0;
-        const codeBlockContainer = this.group.querySelector('foreignObject');
-        if (codeBlockContainer) {
-            const bbox = codeBlockContainer.getBBox();
-            const centerX = bbox.x + bbox.width / 2;
-            const centerY = bbox.y + bbox.height / 2;
-            this.group.setAttribute('transform', `translate(${currentX}, ${currentY}) rotate(${value}, ${centerX}, ${centerY})`);
-        }
-    }
-
-    move(dx, dy) {
-        const currentTransform = this.group.transform.baseVal.consolidate();
-        const currentX = currentTransform ? currentTransform.matrix.e : 0;
-        const currentY = currentTransform ? currentTransform.matrix.f : 0;
-
-        this.x = currentX + dx;
-        this.y = currentY + dy;
-
-        // Only update frame containment if we're actively dragging the shape itself
-        // and not being moved by a parent frame
-        if (isCodeDragging && !this.isBeingMovedByFrame) {
-            this.updateFrameContainment();
-        }
-
-        this.updateAttachedArrows();
-    }
-
-    updateAttachedArrows() {
-        updateAttachedArrows(this);
-    }
-
-    updateFrameContainment() {
-        // Don't update if we're being moved by a frame
-        if (this.isBeingMovedByFrame) return;
-        
-        let targetFrame = null;
-        
-        // Find which frame this shape is over
-        if (typeof shapes !== 'undefined' && Array.isArray(shapes)) {
-            shapes.forEach(shape => {
-                if (shape.shapeName === 'frame' && shape.isShapeInFrame(this)) {
-                    targetFrame = shape;
-                }
-            });
-        }
-        
-        // If we have a parent frame and we're being dragged, temporarily remove clipping
-        if (this.parentFrame && isCodeDragging) {
-            this.parentFrame.temporarilyRemoveFromFrame(this);
-        }
-        
-        // Update frame highlighting
-        if (hoveredCodeFrame && hoveredCodeFrame !== targetFrame) {
-            hoveredCodeFrame.removeHighlight();
-        }
-        
-        if (targetFrame && targetFrame !== hoveredCodeFrame) {
-            targetFrame.highlightFrame();
-        }
-        
-        hoveredCodeFrame = targetFrame;
-    }
-
-    contains(x, y) {
-        const codeElement = this.group.querySelector('text');
-        if (!codeElement) return false;
-        
-        const bbox = codeElement.getBBox();
-        const padding = 8; // Selection padding
-        
-        const CTM = this.group.getCTM();
-        if (!CTM) return false;
-        
-        const inverseCTM = CTM.inverse();
-        const svgPoint = svg.createSVGPoint();
-        svgPoint.x = x;
-        svgPoint.y = y;
-        const transformedPoint = svgPoint.matrixTransform(inverseCTM);
-        
-        return transformedPoint.x >= bbox.x - padding && 
-               transformedPoint.x <= bbox.x + bbox.width + padding &&
-               transformedPoint.y >= bbox.y - padding && 
-               transformedPoint.y <= bbox.y + bbox.height + padding;
-    }
-
-    // Add draw method for consistency with other shapes
-    draw() {
-        if (selectedCodeBlock === this.group) {
-            updateCodeSelectionFeedback();
-        }
-    }
-
-    // Add methods for frame compatibility
-    removeSelection() {
-        if (selectedCodeBlock === this.group) {
-            deselectCodeBlock();
-        }
-    }
-
-    selectShape() {
-        selectCodeBlock(this.group);
-    }
-}
 
 // Convert group element to our CodeShape class
 function wrapCodeElement(groupElement) {

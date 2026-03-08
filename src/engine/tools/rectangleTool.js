@@ -3,8 +3,8 @@
 // Depends on globals: svg, shapes, currentShape, rough, currentZoom, lastMousePos
 // Depends on globals: isSquareToolActive, isSelectionToolActive
 // Depends on globals: squareSideBar, disableAllSideBars
-import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransformAction, pushFrameAttachmentAction } from '../../JS/undoAndRedo.js';
-import { cleanupAttachments } from '../../JS/drawArrow.js';
+import { pushCreateAction, pushDeleteAction, pushOptionsChangeAction, pushTransformAction, pushFrameAttachmentAction } from '../../../JS/undoAndRedo.js';
+import { cleanupAttachments } from '../../../JS/drawArrow.js';
 
 let isDrawingSquare = false;
 let isDraggingShapeSquare = false;
