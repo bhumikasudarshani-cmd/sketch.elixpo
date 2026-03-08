@@ -5,9 +5,9 @@
 
 .toolbar {
     position: absolute;
-    top: 50%;
+    top: calc(48px + 10px);
     left: 10px;
-    transform: translateY(-50%);
+    bottom: 70px;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -19,6 +19,13 @@
     padding: 10px 0;
     box-sizing: border-box;
     z-index: 1000;
+    max-height: calc(100vh - 48px - 10px - 70px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.toolbar::-webkit-scrollbar {
+    display: none;
 }
 
 .toolbar .spacer
@@ -507,7 +514,7 @@
 
 #menuIcon
 {
-    display: none;
+    display: flex;
 }
 
 

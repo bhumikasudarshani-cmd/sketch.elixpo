@@ -6,7 +6,7 @@ import { handleMouseDownLine, handleMouseMoveLine, handleMouseUpLine } from './l
 import { handleFreehandMouseDown, handleFreehandMouseMove, handleFreehandMouseUp } from './canvasStroke.js';
 import { handleTextMouseDown, handleTextMouseMove, handleTextMouseUp } from './writeText.js';
 import { handleMouseDownFrame, handleMouseMoveFrame, handleMouseUpFrame } from './frameHolder.js';
-import { handleMultiSelectionMouseDown, handleMultiSelectionMouseMove, handleMultiSelectionMouseUp, multiSelection, isMultiSelecting} from './selection.js';
+import { handleMultiSelectionMouseDown, handleMultiSelectionMouseMove, handleMultiSelectionMouseUp, removeMultiSelectionRect, multiSelection, isMultiSelecting} from './selection.js';
 import { handleMouseDownIcon, handleMouseMoveIcon, handleMouseUpIcon } from './icons.js';
 import { handleCodeMouseDown, handleCodeMouseMove, handleCodeMouseUp } from './writeCode.js';
 
