@@ -14,11 +14,11 @@ class Rectangle {
         this.height = height;
         this.options = {
             roughness: 1.5,
-            stroke: squareStrokecolor,
-            strokeWidth: squareStrokeThicknes,
-            fill: squareBackgroundColor,
-            fillStyle: squareFillStyleValue,
-            strokeDasharray: squareOutlineStyle === "dashed" ? "10,10" : (squareOutlineStyle === "dotted" ? "2,8" : ""),
+            stroke: "#fff",
+            strokeWidth: 2,
+            fill: "transparent",
+            fillStyle: "none",
+            strokeDasharray: "",
             ...options
         };
         this.element = null;

@@ -45,15 +45,15 @@ class FreehandStroke {
         this.points = points;
         this.rawPoints = []; 
         this.options = {
-            stroke: strokeColor,
-            strokeWidth: strokeThickness,
+            stroke: "#fff",
+            strokeWidth: 3,
             fill: "none",
             strokeLinecap: "round",
             strokeLinejoin: "round",
-            strokeOpacity: strokeOpacity,
-            thinning: strokeThinning,
-            roughness: strokeRoughnessValue,
-            strokeStyle: strokeStyleValue,
+            strokeOpacity: 1,
+            thinning: 0.5,
+            roughness: 0,
+            strokeStyle: "solid",
             ...options
         };
         this.element = null;

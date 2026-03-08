@@ -10,11 +10,11 @@ class Circle {
         this.ry = ry; 
         this.options = {
             roughness: 1.5,
-            stroke: circleStrokecolor,
-            strokeWidth: circleStrokeThicknes,
-            fill: circleBackgroundColor,
-            fillStyle: circleFillStyleValue,
-            strokeDasharray: circleOutlineStyle === "dashed" ? "5,5" : (circleOutlineStyle === "dotted" ? "2,8" : ""),
+            stroke: "#fff",
+            strokeWidth: 2,
+            fill: "transparent",
+            fillStyle: "none",
+            strokeDasharray: "",
             ...options
         };
         this.element = null;

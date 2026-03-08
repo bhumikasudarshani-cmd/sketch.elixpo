@@ -21,10 +21,10 @@ class Frame {
         this.rotation = options.rotation || 0;
         this.frameName = options.frameName || "Frame";
         this.options = {
-            stroke: options.stroke || frameStrokeColor,
-            strokeWidth: options.strokeWidth || frameStrokeThickness,
-            fill: options.fill || frameFillColor,
-            opacity: options.opacity || frameOpacity,
+            stroke: options.stroke || "#555",
+            strokeWidth: options.strokeWidth || 1,
+            fill: options.fill || "transparent",
+            opacity: options.opacity || 1,
             ...options
         };
 

@@ -119,6 +119,15 @@ class SketchEngine {
 
         // Container
         window.container = document.querySelector('.container') || document.body;
+
+        // Sidebar control — in React, sidebars are managed by Zustand,
+        // but legacy code calls this to hide all sidebars.
+        window.disableAllSideBars = window.disableAllSideBars || function() {
+            // Hide all legacy sidebar elements
+            [window.paintBrushSideBar, window.lineSideBar, window.squareSideBar,
+             window.circleSideBar, window.arrowSideBar, window.textSideBar, window.frameSideBar
+            ].forEach(el => { if (el) el.classList.add('hidden'); });
+        };
     }
 
     /**

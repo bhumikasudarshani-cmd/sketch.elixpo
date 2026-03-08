@@ -17,18 +17,18 @@ class Arrow {
         this.startPoint = startPoint;
         this.endPoint = endPoint;
         this.options = {
-            stroke: options.stroke || arrowStrokeColor,
-            strokeWidth: options.strokeWidth || arrowStrokeThickness,
+            stroke: options.stroke || "#fff",
+            strokeWidth: options.strokeWidth || 2,
             strokeDasharray: options.arrowOutlineStyle === "dashed" ? "10,10" : (options.arrowOutlineStyle === "dotted" ? "2,8" : ""),
             fill: 'none',
             ...options
         };
-        this.arrowOutlineStyle = options.arrowOutlineStyle || arrowOutlineStyle;
-        this.arrowHeadStyle = options.arrowHeadStyle || arrowHeadStyle;
-        this.arrowHeadLength = parseFloat(options.arrowHeadLength || arrowHeadLength);
-        this.arrowHeadAngleDeg = parseFloat(options.arrowHeadAngleDeg || arrowHeadAngleDeg);
-        this.arrowCurved = options.arrowCurved !== undefined ? options.arrowCurved : arrowCurved;
-        this.arrowCurveAmount = options.arrowCurveAmount || arrowCurveAmount;
+        this.arrowOutlineStyle = options.arrowOutlineStyle || "solid";
+        this.arrowHeadStyle = options.arrowHeadStyle || "filled";
+        this.arrowHeadLength = parseFloat(options.arrowHeadLength || 15);
+        this.arrowHeadAngleDeg = parseFloat(options.arrowHeadAngleDeg || 30);
+        this.arrowCurved = options.arrowCurved !== undefined ? options.arrowCurved : "straight";
+        this.arrowCurveAmount = options.arrowCurveAmount || 50;
 
         // Control points for curved arrows
         this.controlPoint1 = options.controlPoint1 || null;
