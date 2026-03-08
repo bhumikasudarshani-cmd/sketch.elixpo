@@ -1539,24 +1539,7 @@ updateFrameContainment() {
     }
 
     updateSidebar() {
-        arrowStrokeColorOptions.forEach(span => {
-            span.classList.toggle('selected', span.getAttribute('data-id') === this.options.stroke);
-        });
-        arrowStrokeThicknessValue.forEach(span => {
-            span.classList.toggle('selected', parseInt(span.getAttribute('data-id')) === this.options.strokeWidth);
-        });
-        arrowOutlineStyleValue.forEach(span => {
-            span.classList.toggle('selected', span.getAttribute('data-id') === this.arrowOutlineStyle);
-        });
-        arrowTypeStyleValue.forEach(span => {
-            span.classList.toggle('selected', span.getAttribute('data-id') === this.arrowCurved);
-        });
-        arrowHeadStyleValue.forEach(span => {
-            span.classList.toggle('selected', span.getAttribute('data-id') === this.arrowHeadStyle);
-        });
-        arrowCurveAmountOptions.forEach(span => {
-            span.classList.toggle('selected', parseInt(span.getAttribute('data-id')) === this.arrowCurveAmount);
-        });
+        // No-op: React sidebar handles UI updates via Zustand store
     }
 
     destroy() {

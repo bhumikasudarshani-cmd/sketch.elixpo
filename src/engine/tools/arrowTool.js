@@ -600,6 +600,23 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Expose arrow tool settings on window for React sidebar bridge
+window.arrowToolSettings = {
+    get strokeColor() { return arrowStrokeColor; },
+    set strokeColor(v) { arrowStrokeColor = v; },
+    get strokeWidth() { return arrowStrokeThickness; },
+    set strokeWidth(v) { arrowStrokeThickness = v; },
+    get outlineStyle() { return arrowOutlineStyle; },
+    set outlineStyle(v) { arrowOutlineStyle = v; },
+    get headStyle() { return arrowHeadStyle; },
+    set headStyle(v) { arrowHeadStyle = v; },
+    get arrowCurved() { return arrowCurved; },
+    set arrowCurved(v) { arrowCurved = v; },
+    get curveAmount() { return arrowCurveAmount; },
+    set curveAmount(v) { arrowCurveAmount = v; },
+};
+window.updateSelectedArrowStyle = updateSelectedArrowStyle;
+
 // Export the cleanup function
 export {
     handleMouseDown as handleMouseDownArrow,

@@ -25,7 +25,7 @@ function ColorGrid({ colors, selected, onSelect }) {
             key={c}
             onClick={() => onSelect(c)}
             className={`w-7 h-7 rounded-md border-[1.5px] transition-all duration-100 ${
-              selected === c ? 'border-[#5B57D1] scale-110' : 'border-white/[0.08] hover:border-white/20'
+              selected === c ? 'border-accent-blue scale-110' : 'border-white/[0.08] hover:border-white/20'
             }`}
             style={!isTrans ? { backgroundColor: c } : undefined}
           >

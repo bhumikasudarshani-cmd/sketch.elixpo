@@ -2,7 +2,7 @@
 
 import useSketchStore, { TOOLS } from '@/store/useSketchStore'
 import ShapeSidebar, { ToolbarButton, Divider } from './ShapeSidebar'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 const STROKE_COLORS = ['#fff', '#FF8383', '#3A994C', '#56A2E8', '#FFD700', '#FF69B4', '#A855F7']
 
@@ -37,7 +37,44 @@ export default function ArrowSidebar() {
   const [thickness, setThickness] = useState(2)
   const [outlineStyle, setOutlineStyle] = useState('solid')
   const [arrowType, setArrowType] = useState('straight')
-  const [curvature, setCurvature] = useState(8)
+  const [curvature, setCurvature] = useState(20)
+
+  // Bridge helpers: update React state + engine state + selected arrow
+  const updateHead = useCallback((v) => {
+    setHeadStyle(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.headStyle = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ arrowHeadStyle: v })
+  }, [])
+
+  const updateStroke = useCallback((v) => {
+    setStrokeColor(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.strokeColor = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ stroke: v })
+  }, [])
+
+  const updateThickness = useCallback((v) => {
+    setThickness(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.strokeWidth = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ strokeWidth: v })
+  }, [])
+
+  const updateOutline = useCallback((v) => {
+    setOutlineStyle(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.outlineStyle = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ arrowOutlineStyle: v })
+  }, [])
+
+  const updateType = useCallback((v) => {
+    setArrowType(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.arrowCurved = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ arrowCurved: v })
+  }, [])
+
+  const updateCurvature = useCallback((v) => {
+    setCurvature(v)
+    if (window.arrowToolSettings) window.arrowToolSettings.curveAmount = v
+    if (window.updateSelectedArrowStyle) window.updateSelectedArrowStyle({ arrowCurveAmount: v })
+  }, [])
 
   return (
     <ShapeSidebar visible={activeTool === TOOLS.ARROW}>
@@ -46,7 +83,7 @@ export default function ArrowSidebar() {
         <p className="text-[10px] text-[#ccc] uppercase tracking-wider mb-2">Head</p>
         <div className="flex items-center gap-1">
           {HEAD_STYLES.map((h) => (
-            <button key={h.value} onClick={() => setHeadStyle(h.value)}
+            <button key={h.value} onClick={() => updateHead(h.value)}
               className={`w-10 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${headStyle === h.value ? 'bg-[#5B57D1]/20 text-[#5B57D1]' : 'text-[#ccc] hover:bg-white/[0.06]'}`}
             >
               <SvgIcon svg={h.svg} />
@@ -61,7 +98,7 @@ export default function ArrowSidebar() {
         preview={<span className="w-4 h-4 rounded-md border border-white/20" style={{ backgroundColor: strokeColor }} />}
       >
         <p className="text-[10px] text-[#ccc] uppercase tracking-wider mb-2">Stroke</p>
-        <ColorGrid colors={STROKE_COLORS} selected={strokeColor} onSelect={setStrokeColor} />
+        <ColorGrid colors={STROKE_COLORS} selected={strokeColor} onSelect={updateStroke} />
       </ToolbarButton>
 
       <Divider />
@@ -70,7 +107,7 @@ export default function ArrowSidebar() {
         <p className="text-[10px] text-[#ccc] uppercase tracking-wider mb-2">Width</p>
         <div className="flex items-center gap-1">
           {[1, 2, 4, 7].map((w) => (
-            <button key={w} onClick={() => setThickness(w)}
+            <button key={w} onClick={() => updateThickness(w)}
               className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${thickness === w ? 'bg-[#5B57D1]/20 text-[#5B57D1]' : 'text-[#ccc] hover:bg-white/[0.06]'}`}
             >
               <div className="w-5 rounded-full bg-current" style={{ height: Math.max(1, w) }} />
@@ -85,7 +122,7 @@ export default function ArrowSidebar() {
         <p className="text-[10px] text-[#ccc] uppercase tracking-wider mb-2">Style</p>
         <div className="flex items-center gap-1">
           {[{ v: 'solid', d: '' }, { v: 'dashed', d: '6 4' }, { v: 'dotted', d: '2 3' }].map((s) => (
-            <button key={s.v} onClick={() => setOutlineStyle(s.v)}
+            <button key={s.v} onClick={() => updateOutline(s.v)}
               className={`w-11 h-8 flex items-center justify-center rounded-lg transition-all duration-100 ${outlineStyle === s.v ? 'bg-[#5B57D1]/20' : 'hover:bg-white/[0.06]'}`}
             >
               <svg width="28" height="4" viewBox="0 0 28 4"><line x1="0" y1="2" x2="28" y2="2" stroke="#fff" strokeWidth="2" strokeDasharray={s.d} strokeLinecap="round" /></svg>
@@ -105,7 +142,7 @@ export default function ArrowSidebar() {
             { v: 'curved', i: 'bxs-analyse', l: 'Curved' },
             { v: 'elbow', i: 'bxs-network-chart', l: 'Elbow' },
           ].map((a) => (
-            <button key={a.v} onClick={() => setArrowType(a.v)}
+            <button key={a.v} onClick={() => updateType(a.v)}
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] transition-all duration-100 ${arrowType === a.v ? 'bg-[#5B57D1] text-white' : 'text-[#aaa] hover:bg-white/[0.06]'}`}
             >
               <i className={`bx ${a.i} text-sm`} /> {a.l}
@@ -117,7 +154,7 @@ export default function ArrowSidebar() {
               <p className="text-[9px] text-[#666] uppercase tracking-wider mb-1">Curvature</p>
               <div className="flex items-center gap-1">
                 {[{ v: 8, l: 'Lo' }, { v: 20, l: 'Md' }, { v: 40, l: 'Hi' }].map((c) => (
-                  <button key={c.v} onClick={() => setCurvature(c.v)}
+                  <button key={c.v} onClick={() => updateCurvature(c.v)}
                     className={`flex-1 py-1 rounded-md text-[10px] text-center transition-all duration-100 ${curvature === c.v ? 'bg-[#5B57D1]/20 text-[#5B57D1]' : 'text-[#ccc] hover:bg-white/[0.06]'}`}
                   >{c.l}</button>
                 ))}
