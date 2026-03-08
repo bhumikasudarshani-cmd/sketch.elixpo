@@ -285,7 +285,304 @@ window.onload = () => {
   toolExtraPopup();
   // updateUndoRedoButtons();
   resizeCanvas();
-
 };
 
- 
+// --- Programmatic tool selection by icon class ---
+function selectToolByClass(iconClass) {
+  // Deselect current shape
+  if (typeof currentShape !== 'undefined' && currentShape && typeof currentShape.removeSelection === 'function') {
+    currentShape.removeSelection();
+    currentShape = null;
+  }
+  if (typeof clearAllSelections === 'function') clearAllSelections();
+
+  const toolIcon = document.querySelector(`.toolbar .${iconClass}`);
+  if (!toolIcon) return;
+
+  tools.forEach(t => t.classList.remove("selected"));
+  toolIcon.classList.add("selected");
+  selectedTool = toolIcon;
+  toolExtraPopup();
+}
+
+// --- Keyboard shortcut map: key -> icon class ---
+const toolShortcutMap = {
+  'h': 'bxs-hand',       // Hand / Pan
+  'v': 'bxs-pointer',    // Selection
+  '1': 'bxs-pointer',    // Selection (alt)
+  'r': 'bx-square',      // Rectangle
+  '2': 'bx-square',      // Rectangle (alt)
+  'o': 'bx-circle',      // Ellipse
+  '4': 'bx-circle',      // Ellipse (alt)
+  'a': 'bx-right-arrow-alt', // Arrow
+  '5': 'bx-right-arrow-alt', // Arrow (alt)
+  'l': 'bxs-minus',      // Line
+  '6': 'bxs-minus',      // Line (alt)
+  'p': 'bx-stroke-pen',  // Draw / Pen
+  '7': 'bx-stroke-pen',  // Draw (alt)
+  't': 'bx-text',        // Text
+  '8': 'bx-text',        // Text (alt)
+  '9': 'bx-image-alt',   // Insert image
+  'e': 'bxs-eraser',     // Eraser
+  '0': 'bxs-eraser',     // Eraser (alt)
+  'f': 'bx-frame',       // Frame
+  'k': 'bxs-magic-wand', // Laser pointer
+};
+
+// --- Central keyboard shortcut handler ---
+document.addEventListener('keydown', (e) => {
+  // Skip if user is typing in an input, textarea, or contenteditable
+  const tag = e.target.tagName.toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+  // Skip if a text/code editor overlay is active
+  if (document.querySelector('.text-edit-overlay:not(.hidden)')) return;
+
+  const key = e.key.toLowerCase();
+
+  // --- Ctrl/Cmd shortcuts ---
+  if (e.ctrlKey || e.metaKey) {
+    // Select All: Ctrl+A
+    if (key === 'a' && !e.shiftKey) {
+      e.preventDefault();
+      // Switch to selection tool first
+      selectToolByClass('bxs-pointer');
+      // Select all shapes
+      if (typeof shapes !== 'undefined' && shapes.length > 0 && typeof clearAllSelections === 'function') {
+        clearAllSelections();
+        shapes.forEach(shape => {
+          if (typeof multiSelection !== 'undefined') {
+            multiSelection.addShape(shape);
+          }
+        });
+      }
+      return;
+    }
+
+    // Group: Ctrl+G
+    if (key === 'g' && !e.shiftKey) {
+      e.preventDefault();
+      if (typeof multiSelection !== 'undefined' && multiSelection.selectedShapes.size > 1) {
+        groupSelectedShapes();
+      }
+      return;
+    }
+
+    // Ungroup: Ctrl+Shift+G
+    if (key === 'g' && e.shiftKey) {
+      e.preventDefault();
+      if (typeof currentShape !== 'undefined' && currentShape && currentShape.shapeName === 'frame') {
+        ungroupFrame(currentShape);
+      }
+      return;
+    }
+
+    // Duplicate: Ctrl+D
+    if (key === 'd') {
+      e.preventDefault();
+      duplicateSelection();
+      return;
+    }
+
+    return; // Don't process tool shortcuts when Ctrl is held
+  }
+
+  // --- Tool switching shortcuts (no modifier keys) ---
+  if (!e.shiftKey && !e.altKey) {
+    const iconClass = toolShortcutMap[key];
+    if (iconClass) {
+      e.preventDefault();
+      selectToolByClass(iconClass);
+      return;
+    }
+
+    // Escape: deselect all
+    if (e.key === 'Escape') {
+      if (typeof currentShape !== 'undefined' && currentShape && typeof currentShape.removeSelection === 'function') {
+        currentShape.removeSelection();
+        currentShape = null;
+      }
+      if (typeof clearAllSelections === 'function') clearAllSelections();
+      disableAllSideBars();
+      return;
+    }
+  }
+});
+
+// --- Group selected shapes into a frame ---
+function groupSelectedShapes() {
+  if (typeof multiSelection === 'undefined' || multiSelection.selectedShapes.size < 2) return;
+
+  const shapesArr = Array.from(multiSelection.selectedShapes);
+
+  // Calculate bounding box of all selected shapes
+  const bounds = multiSelection.getBounds();
+  if (!bounds) return;
+
+  // Add padding
+  const padding = 20;
+  const frameX = bounds.x - padding;
+  const frameY = bounds.y - padding;
+  const frameW = bounds.width + padding * 2;
+  const frameH = bounds.height + padding * 2;
+
+  // Clear multi-selection first
+  multiSelection.clearSelection();
+
+  // Create a frame via Frame class if available
+  if (typeof Frame === 'function') {
+    const frame = new Frame(frameX, frameY, frameW, frameH);
+    frame.draw();
+    shapes.push(frame);
+
+    // Add shapes to frame
+    shapesArr.forEach(shape => {
+      if (typeof frame.addShapeToFrame === 'function') {
+        frame.addShapeToFrame(shape);
+      }
+    });
+
+    // Push create action for undo
+    if (typeof pushCreateAction === 'function') {
+      pushCreateAction(frame);
+    }
+
+    // Select the frame
+    currentShape = frame;
+    if (typeof frame.addAnchors === 'function') {
+      frame.addAnchors();
+    }
+  }
+}
+
+// --- Ungroup a frame (release children) ---
+function ungroupFrame(frame) {
+  if (!frame || frame.shapeName !== 'frame') return;
+
+  // Release all children from frame
+  if (frame.containedShapes && frame.containedShapes.length > 0) {
+    const children = [...frame.containedShapes];
+    children.forEach(child => {
+      if (typeof frame.removeShapeFromFrame === 'function') {
+        frame.removeShapeFromFrame(child);
+      }
+    });
+  }
+
+  // Remove frame selection
+  if (typeof frame.removeSelection === 'function') {
+    frame.removeSelection();
+  }
+
+  // Remove frame from DOM
+  if (frame.group && frame.group.parentNode) {
+    frame.group.parentNode.removeChild(frame.group);
+  }
+
+  // Remove from shapes array
+  const idx = shapes.indexOf(frame);
+  if (idx !== -1) shapes.splice(idx, 1);
+
+  // Push delete action for undo
+  if (typeof pushDeleteAction === 'function') {
+    pushDeleteAction(frame);
+  }
+
+  currentShape = null;
+  disableAllSideBars();
+}
+
+// --- Duplicate current selection ---
+function duplicateSelection() {
+  const offset = 20;
+
+  // Multi-selection duplicate
+  if (typeof multiSelection !== 'undefined' && multiSelection.selectedShapes.size > 0) {
+    const newShapes = [];
+    multiSelection.selectedShapes.forEach(shape => {
+      const dup = duplicateSingleShape(shape, offset);
+      if (dup) newShapes.push(dup);
+    });
+    multiSelection.clearSelection();
+    newShapes.forEach(s => {
+      if (typeof multiSelection.addShape === 'function') {
+        multiSelection.addShape(s);
+      }
+    });
+    return;
+  }
+
+  // Single shape duplicate
+  if (currentShape) {
+    const dup = duplicateSingleShape(currentShape, offset);
+    if (dup) {
+      if (typeof currentShape.removeSelection === 'function') currentShape.removeSelection();
+      currentShape = dup;
+      if (typeof dup.addAnchors === 'function') dup.addAnchors();
+    }
+  }
+}
+
+function duplicateSingleShape(shape, offset) {
+  if (!shape) return null;
+
+  let newShape = null;
+  switch (shape.shapeName) {
+    case 'rectangle':
+      if (typeof Rectangle === 'function') {
+        newShape = new Rectangle(shape.x + offset, shape.y + offset, shape.width, shape.height);
+        newShape.strokeColor = shape.strokeColor;
+        newShape.fillColor = shape.fillColor;
+        newShape.strokeWidth = shape.strokeWidth;
+        newShape.roughness = shape.roughness;
+        newShape.fillStyle = shape.fillStyle;
+        newShape.draw();
+        shapes.push(newShape);
+      }
+      break;
+    case 'circle':
+      if (typeof Circle === 'function') {
+        newShape = new Circle(shape.x + offset, shape.y + offset, shape.rx, shape.ry);
+        newShape.strokeColor = shape.strokeColor;
+        newShape.fillColor = shape.fillColor;
+        newShape.strokeWidth = shape.strokeWidth;
+        newShape.roughness = shape.roughness;
+        newShape.fillStyle = shape.fillStyle;
+        newShape.draw();
+        shapes.push(newShape);
+      }
+      break;
+    case 'line':
+      if (typeof Line === 'function') {
+        newShape = new Line(
+          { x: shape.startPoint.x + offset, y: shape.startPoint.y + offset },
+          { x: shape.endPoint.x + offset, y: shape.endPoint.y + offset }
+        );
+        newShape.strokeColor = shape.strokeColor;
+        newShape.strokeWidth = shape.strokeWidth;
+        newShape.draw();
+        shapes.push(newShape);
+      }
+      break;
+    case 'frame':
+      if (typeof Frame === 'function') {
+        newShape = new Frame(shape.x + offset, shape.y + offset, shape.width, shape.height);
+        newShape.draw();
+        shapes.push(newShape);
+      }
+      break;
+    default:
+      return null;
+  }
+
+  if (newShape && typeof pushCreateAction === 'function') {
+    pushCreateAction(newShape);
+  }
+  return newShape;
+}
+
+// Expose new functions globally
+window.selectToolByClass = selectToolByClass;
+window.groupSelectedShapes = groupSelectedShapes;
+window.ungroupFrame = ungroupFrame;
+window.duplicateSelection = duplicateSelection;
+

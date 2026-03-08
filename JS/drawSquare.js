@@ -1085,4 +1085,6 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+window.Rectangle = Rectangle;
+
 export { handleMouseDownRect, handleMouseMoveRect, handleMouseUpRect};
