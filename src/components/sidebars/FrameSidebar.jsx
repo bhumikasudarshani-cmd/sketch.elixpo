@@ -10,20 +10,20 @@ export default function FrameSidebar() {
 
   return (
     <ShapeSidebar visible={activeTool === TOOLS.FRAME}>
-      <PropertySection label="Name">
+      <PropertySection icon="bx-rename">
         <input
           type="text"
           value={frameName}
           onChange={(e) => setFrameName(e.target.value)}
-          className="w-24 px-2 py-1 bg-surface-dark border border-border rounded-lg text-text-secondary text-xs outline-none focus:border-border-accent transition-all duration-200 font-[lixFont]"
+          className="w-28 px-2 py-1.5 bg-white/[0.05] border border-white/[0.08] rounded-lg text-text-secondary text-xs outline-none focus:border-accent/50 transition-all duration-150 font-[lixFont]"
           spellCheck={false}
         />
       </PropertySection>
 
       <Divider />
 
-      <PropertySection label="Actions">
-        <button className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-text-muted text-xs hover:bg-surface-hover hover:text-text-primary transition-all duration-200">
+      <PropertySection icon="bx-expand" defaultOpen={true}>
+        <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-text-muted text-[11px] hover:bg-white/[0.05] hover:text-text-primary transition-all duration-150">
           <i className="bx bx-expand text-sm" />
           Resize to Fit
         </button>

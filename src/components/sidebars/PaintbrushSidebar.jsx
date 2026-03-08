@@ -13,44 +13,28 @@ const STROKE_COLORS = [
 ]
 
 const THICKNESSES = [
-  { value: 2, label: 'Thin' },
-  { value: 5, label: 'Medium' },
-  { value: 7, label: 'Thick' },
+  { value: 2, width: 'h-px' },
+  { value: 5, width: 'h-0.5' },
+  { value: 7, width: 'h-1' },
 ]
 
 const STYLES = [
-  {
-    value: 'solid',
-    label: 'Solid',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2"/></svg>',
-  },
-  {
-    value: 'dashed',
-    label: 'Dashed',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/></svg>',
-  },
-  {
-    value: 'dotted',
-    label: 'Dotted',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/></svg>',
-  },
+  { value: 'solid', dash: '' },
+  { value: 'dashed', dash: '6 4' },
+  { value: 'dotted', dash: '2 4' },
 ]
 
 const TAPERS = [
-  { value: 'uniform', label: 'Uniform' },
-  { value: 'pen', label: 'Pen' },
-  { value: 'brush', label: 'Brush' },
+  { value: 'uniform', icon: 'bx-minus' },
+  { value: 'pen', icon: 'bx-pen' },
+  { value: 'brush', icon: 'bx-brush' },
 ]
 
 const ROUGHNESS_OPTIONS = [
-  { value: 'smooth', label: 'Smooth' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'rough', label: 'Rough' },
+  { value: 'smooth', icon: 'bx-water' },
+  { value: 'medium', icon: 'bx-wind' },
+  { value: 'rough', icon: 'bx-scatter-chart' },
 ]
-
-function SvgIcon({ svg }) {
-  return <span dangerouslySetInnerHTML={{ __html: svg }} />
-}
 
 export default function PaintbrushSidebar() {
   const activeTool = useSketchStore((s) => s.activeTool)
@@ -63,17 +47,14 @@ export default function PaintbrushSidebar() {
 
   return (
     <ShapeSidebar visible={activeTool === TOOLS.FREEHAND}>
-      <PropertySection label="Stroke">
-        <div className="flex items-center gap-1.5">
+      <PropertySection icon="bx-palette" label={<span className="w-3 h-3 rounded-full inline-block border border-white/20" style={{ backgroundColor: strokeColor }} />}>
+        <div className="flex items-center gap-2">
           {STROKE_COLORS.map((c) => (
             <button
               key={c.color}
-              title={c.label}
               onClick={() => setStrokeColor(c.color)}
-              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-                strokeColor === c.color
-                  ? 'border-accent scale-110'
-                  : 'border-border hover:border-border-light'
+              className={`w-5 h-5 rounded-full border-[1.5px] transition-all duration-150 ${
+                strokeColor === c.color ? 'border-accent scale-125' : 'border-transparent hover:scale-110'
               }`}
               style={{ backgroundColor: c.color }}
             />
@@ -83,19 +64,17 @@ export default function PaintbrushSidebar() {
 
       <Divider />
 
-      <PropertySection label="Thickness">
+      <PropertySection icon="bx-line-chart">
         <div className="flex items-center gap-1">
           {THICKNESSES.map((t) => (
             <button
               key={t.value}
               onClick={() => setThickness(t.value)}
-              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
-                thickness === t.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                thickness === t.value ? 'bg-white/10 text-white' : 'text-text-muted hover:bg-white/[0.05]'
               }`}
             >
-              {t.label}
+              <div className={`w-5 ${t.width} bg-current rounded-full`} />
             </button>
           ))}
         </div>
@@ -103,20 +82,19 @@ export default function PaintbrushSidebar() {
 
       <Divider />
 
-      <PropertySection label="Style">
+      <PropertySection icon="bx-pulse">
         <div className="flex items-center gap-1">
           {STYLES.map((s) => (
             <button
               key={s.value}
-              title={s.label}
               onClick={() => setLineStyle(s.value)}
-              className={`px-2 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                lineStyle === s.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-10 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                lineStyle === s.value ? 'bg-white/10' : 'hover:bg-white/[0.05]'
               }`}
             >
-              <SvgIcon svg={s.svg} />
+              <svg width="24" height="3" viewBox="0 0 32 12">
+                <line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray={s.dash} strokeLinecap="round" />
+              </svg>
             </button>
           ))}
         </div>
@@ -124,19 +102,17 @@ export default function PaintbrushSidebar() {
 
       <Divider />
 
-      <PropertySection label="Taper">
+      <PropertySection icon="bx-pen">
         <div className="flex items-center gap-1">
           {TAPERS.map((t) => (
             <button
               key={t.value}
               onClick={() => setTaper(t.value)}
-              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
-                taper === t.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                taper === t.value ? 'bg-white/10 text-white' : 'text-text-muted hover:bg-white/[0.05]'
               }`}
             >
-              {t.label}
+              <i className={`bx ${t.icon} text-sm`} />
             </button>
           ))}
         </div>
@@ -144,19 +120,17 @@ export default function PaintbrushSidebar() {
 
       <Divider />
 
-      <PropertySection label="Roughness">
+      <PropertySection icon="bx-shape-polygon">
         <div className="flex items-center gap-1">
           {ROUGHNESS_OPTIONS.map((r) => (
             <button
               key={r.value}
               onClick={() => setRoughness(r.value)}
-              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
-                roughness === r.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                roughness === r.value ? 'bg-white/10 text-white' : 'text-text-muted hover:bg-white/[0.05]'
               }`}
             >
-              {r.label}
+              <i className={`bx ${r.icon} text-sm`} />
             </button>
           ))}
         </div>
@@ -164,7 +138,7 @@ export default function PaintbrushSidebar() {
 
       <Divider />
 
-      <PropertySection label={`Opacity ${Math.round(opacity * 100)}%`}>
+      <PropertySection icon="bx-sun" label={`${Math.round(opacity * 100)}%`}>
         <input
           type="range"
           min="0"
@@ -172,7 +146,7 @@ export default function PaintbrushSidebar() {
           step="0.05"
           value={opacity}
           onChange={(e) => setOpacity(parseFloat(e.target.value))}
-          className="w-20 h-1.5 bg-surface-dark rounded-lg appearance-none cursor-pointer accent-accent-blue"
+          className="w-24 h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-accent-blue"
         />
       </PropertySection>
     </ShapeSidebar>

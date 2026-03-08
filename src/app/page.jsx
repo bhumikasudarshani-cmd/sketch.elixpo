@@ -14,6 +14,7 @@ import ArrowSidebar from '@/components/sidebars/ArrowSidebar'
 import PaintbrushSidebar from '@/components/sidebars/PaintbrushSidebar'
 import TextSidebar from '@/components/sidebars/TextSidebar'
 import FrameSidebar from '@/components/sidebars/FrameSidebar'
+import IconSidebar from '@/components/sidebars/IconSidebar'
 import SVGCanvas from '@/components/canvas/SVGCanvas'
 import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts'
 
@@ -38,6 +39,7 @@ export default function Home() {
       <PaintbrushSidebar />
       <TextSidebar />
       <FrameSidebar />
+      <IconSidebar />
 
       {/* Canvas (initializes engine via useSketchEngine hook) */}
       <SVGCanvas />

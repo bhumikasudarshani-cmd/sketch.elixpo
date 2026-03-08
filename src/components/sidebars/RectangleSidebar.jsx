@@ -21,85 +21,42 @@ const BG_COLORS = [
 ]
 
 const THICKNESSES = [
-  { value: 2, label: 'Thin' },
-  { value: 5, label: 'Medium' },
-  { value: 7, label: 'Thick' },
+  { value: 2, icon: 'bx-minus', width: 'h-px' },
+  { value: 5, icon: 'bx-minus', width: 'h-0.5' },
+  { value: 7, icon: 'bx-minus', width: 'h-1' },
 ]
 
 const STYLES = [
-  {
-    value: 'solid',
-    label: 'Solid',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2"/></svg>',
-  },
-  {
-    value: 'dashed',
-    label: 'Dashed',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="4 3"/></svg>',
-  },
-  {
-    value: 'dotted',
-    label: 'Dotted',
-    svg: '<svg width="28" height="2" viewBox="0 0 28 2"><line x1="0" y1="1" x2="28" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/></svg>',
-  },
+  { value: 'solid', svg: 'M0,6 L32,6', dash: '' },
+  { value: 'dashed', svg: 'M0,6 L32,6', dash: '6 4' },
+  { value: 'dotted', svg: 'M0,6 L32,6', dash: '2 4' },
 ]
 
 const FILLS = [
-  {
-    value: 'hachure',
-    label: 'Hachure',
-    svg: '<svg width="20" height="20" viewBox="0 0 20 20"><line x1="0" y1="4" x2="4" y2="0" stroke="currentColor" stroke-width="1.5"/><line x1="0" y1="10" x2="10" y2="0" stroke="currentColor" stroke-width="1.5"/><line x1="0" y1="16" x2="16" y2="0" stroke="currentColor" stroke-width="1.5"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.5"/><line x1="10" y1="20" x2="20" y2="10" stroke="currentColor" stroke-width="1.5"/><line x1="16" y1="20" x2="20" y2="16" stroke="currentColor" stroke-width="1.5"/></svg>',
-  },
-  {
-    value: 'solid',
-    label: 'Solid',
-    svg: '<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" fill="currentColor" rx="2"/></svg>',
-  },
-  {
-    value: 'dots',
-    label: 'Dots',
-    svg: '<svg width="20" height="20" viewBox="0 0 20 20"><circle cx="4" cy="4" r="1.5" fill="currentColor"/><circle cx="10" cy="4" r="1.5" fill="currentColor"/><circle cx="16" cy="4" r="1.5" fill="currentColor"/><circle cx="4" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="16" cy="10" r="1.5" fill="currentColor"/><circle cx="4" cy="16" r="1.5" fill="currentColor"/><circle cx="10" cy="16" r="1.5" fill="currentColor"/><circle cx="16" cy="16" r="1.5" fill="currentColor"/></svg>',
-  },
-  {
-    value: 'cross-hatch',
-    label: 'Cross Hatch',
-    svg: '<svg width="20" height="20" viewBox="0 0 20 20"><line x1="0" y1="4" x2="4" y2="0" stroke="currentColor" stroke-width="1"/><line x1="0" y1="10" x2="10" y2="0" stroke="currentColor" stroke-width="1"/><line x1="0" y1="16" x2="16" y2="0" stroke="currentColor" stroke-width="1"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1"/><line x1="16" y1="0" x2="0" y2="16" stroke="currentColor" stroke-width="1"/><line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="1"/><line x1="20" y1="10" x2="10" y2="20" stroke="currentColor" stroke-width="1"/></svg>',
-  },
-  {
-    value: 'transparent',
-    label: 'None',
-    svg: '<svg width="20" height="20" viewBox="0 0 20 20"><rect x="1" y="1" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" rx="2" stroke-dasharray="3 2"/></svg>',
-  },
+  { value: 'hachure', label: 'Hachure' },
+  { value: 'solid', label: 'Solid' },
+  { value: 'dots', label: 'Dots' },
+  { value: 'cross-hatch', label: 'Cross' },
+  { value: 'transparent', label: 'None' },
 ]
 
-function ColorSwatches({ colors, selected, onSelect }) {
+function ColorDot({ color, selected, onClick }) {
+  const isTrans = color === 'transparent'
   return (
-    <div className="flex items-center gap-1.5">
-      {colors.map((c) => (
-        <button
-          key={c.color}
-          title={c.label}
-          onClick={() => onSelect(c.color)}
-          className={`w-6 h-6 rounded-full border-2 transition-all duration-200 ${
-            selected === c.color
-              ? 'border-accent scale-110'
-              : 'border-border hover:border-border-light'
-          } ${c.color === 'transparent' ? 'bg-surface-dark' : ''}`}
-          style={c.color !== 'transparent' ? { backgroundColor: c.color } : undefined}
-        >
-          {c.color === 'transparent' && (
-            <svg className="w-full h-full text-text-dim" viewBox="0 0 20 20">
-              <line x1="3" y1="17" x2="17" y2="3" stroke="currentColor" strokeWidth="1.5" />
-            </svg>
-          )}
-        </button>
-      ))}
-    </div>
+    <button
+      onClick={onClick}
+      className={`w-5 h-5 rounded-full border-[1.5px] transition-all duration-150 ${
+        selected ? 'border-accent scale-125 shadow-sm shadow-accent/30' : 'border-transparent hover:scale-110'
+      } ${isTrans ? 'bg-transparent' : ''}`}
+      style={!isTrans ? { backgroundColor: color } : undefined}
+    >
+      {isTrans && (
+        <svg className="w-full h-full text-text-dim" viewBox="0 0 20 20">
+          <line x1="4" y1="16" x2="16" y2="4" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+      )}
+    </button>
   )
-}
-
-function SvgIcon({ svg }) {
-  return <span dangerouslySetInnerHTML={{ __html: svg }} />
 }
 
 export default function RectangleSidebar() {
@@ -112,31 +69,40 @@ export default function RectangleSidebar() {
 
   return (
     <ShapeSidebar visible={activeTool === TOOLS.RECTANGLE}>
-      <PropertySection label="Stroke">
-        <ColorSwatches colors={STROKE_COLORS} selected={strokeColor} onSelect={setStrokeColor} />
+      {/* Stroke color - show current color dot */}
+      <PropertySection icon="bx-palette" label={<span className="w-3 h-3 rounded-full inline-block border border-white/20" style={{ backgroundColor: strokeColor }} />}>
+        <div className="flex items-center gap-2">
+          {STROKE_COLORS.map((c) => (
+            <ColorDot key={c.color} color={c.color} selected={strokeColor === c.color} onClick={() => setStrokeColor(c.color)} />
+          ))}
+        </div>
       </PropertySection>
 
       <Divider />
 
-      <PropertySection label="Background">
-        <ColorSwatches colors={BG_COLORS} selected={bgColor} onSelect={setBgColor} />
+      {/* Background */}
+      <PropertySection icon="bx-paint-roll" label={<span className="w-3 h-3 rounded-full inline-block border border-white/20" style={{ backgroundColor: bgColor === 'transparent' ? 'transparent' : bgColor }} />}>
+        <div className="flex items-center gap-2">
+          {BG_COLORS.map((c) => (
+            <ColorDot key={c.color} color={c.color} selected={bgColor === c.color} onClick={() => setBgColor(c.color)} />
+          ))}
+        </div>
       </PropertySection>
 
       <Divider />
 
-      <PropertySection label="Thickness">
+      {/* Thickness */}
+      <PropertySection icon="bx-line-chart">
         <div className="flex items-center gap-1">
           {THICKNESSES.map((t) => (
             <button
               key={t.value}
               onClick={() => setThickness(t.value)}
-              className={`px-2 py-1 rounded-lg text-[10px] transition-all duration-200 ${
-                thickness === t.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-9 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                thickness === t.value ? 'bg-white/10 text-white' : 'text-text-muted hover:bg-white/[0.05]'
               }`}
             >
-              {t.label}
+              <div className={`w-5 ${t.width} bg-current rounded-full`} />
             </button>
           ))}
         </div>
@@ -144,20 +110,20 @@ export default function RectangleSidebar() {
 
       <Divider />
 
-      <PropertySection label="Style">
+      {/* Stroke style */}
+      <PropertySection icon="bx-pulse">
         <div className="flex items-center gap-1">
           {STYLES.map((s) => (
             <button
               key={s.value}
-              title={s.label}
               onClick={() => setLineStyle(s.value)}
-              className={`px-2 py-1.5 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                lineStyle === s.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`w-10 h-8 flex items-center justify-center rounded-lg transition-all duration-150 ${
+                lineStyle === s.value ? 'bg-white/10' : 'hover:bg-white/[0.05]'
               }`}
             >
-              <SvgIcon svg={s.svg} />
+              <svg width="24" height="3" viewBox="0 0 32 12">
+                <line x1="2" y1="6" x2="30" y2="6" stroke="currentColor" strokeWidth="2" strokeDasharray={s.dash} strokeLinecap="round" />
+              </svg>
             </button>
           ))}
         </div>
@@ -165,20 +131,18 @@ export default function RectangleSidebar() {
 
       <Divider />
 
-      <PropertySection label="Fill">
+      {/* Fill style */}
+      <PropertySection icon="bx-brush">
         <div className="flex items-center gap-1">
           {FILLS.map((f) => (
             <button
               key={f.value}
-              title={f.label}
               onClick={() => setFillStyle(f.value)}
-              className={`px-1.5 py-1 flex items-center justify-center rounded-lg transition-all duration-200 ${
-                fillStyle === f.value
-                  ? 'bg-surface-active text-text-primary'
-                  : 'text-text-muted hover:bg-surface-hover'
+              className={`px-2.5 py-1.5 rounded-lg text-[10px] transition-all duration-150 ${
+                fillStyle === f.value ? 'bg-white/10 text-white' : 'text-text-muted hover:bg-white/[0.05]'
               }`}
             >
-              <SvgIcon svg={f.svg} />
+              {f.label}
             </button>
           ))}
         </div>
