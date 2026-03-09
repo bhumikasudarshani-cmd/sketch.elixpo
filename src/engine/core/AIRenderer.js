@@ -6,11 +6,13 @@
  * 1. renderAIDiagram(diagram) - from AI text-to-diagram response
  * 2. window.__mermaidRenderer(src) - direct algorithmic Mermaid parser
  *
- * All created shapes (nodes, labels, arrows) belong to a Frame.
- * Node labels are TextShape objects with data-type="text-group" for full
- * interactivity (click-to-select, double-click-to-edit).
- * Edge labels are TextShape objects placed near the arrow midpoint.
- * All arrows are curved by default for clean non-overlapping routing.
+ * Smart edge routing:
+ * - Straight arrows/lines for vertically or horizontally aligned nodes
+ * - Curved arrows for diagonal connections or when edges would overlap
+ * - Elbow connections for right-angle routing when appropriate
+ *
+ * All created shapes belong to a Frame with auto-attachment so
+ * moving nodes keeps edges connected.
  */
 
 const PADDING = 80;
@@ -19,6 +21,10 @@ const NODE_H = 60;
 const H_SPACING = 260;
 const V_SPACING = 180;
 const NS = 'http://www.w3.org/2000/svg';
+
+// Alignment threshold — if nodes are within this many pixels
+// of being aligned, treat them as aligned (use straight edge)
+const ALIGN_THRESHOLD = 30;
 
 // ============================================================
 // MERMAID PARSER
@@ -61,20 +67,32 @@ export function parseMermaid(src) {
         const line = lines[i].replace(/;$/, '').trim();
         if (!line) continue;
 
+        // Labeled edge: A -- text --> B
         let match = line.match(/^(.+?)\s*--\s*(.+?)\s*-->\s*(.+)$/);
         if (match) {
             const fromId = parseNodeRef(match[1].trim());
             const toId = parseNodeRef(match[3].trim());
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: match[2].trim() });
+            if (fromId && toId) edges.push({ from: fromId, to: toId, label: match[2].trim(), directed: true });
             continue;
         }
 
+        // Undirected line: A --- B
+        match = line.match(/^(.+?)\s*(-{3,})\s*(?:\|([^|]*)\|)?\s*(.+)$/);
+        if (match && !match[2].includes('>')) {
+            const fromId = parseNodeRef(match[1].trim());
+            const toId = parseNodeRef(match[4].trim());
+            const edgeLabel = match[3] ? match[3].trim() : undefined;
+            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: false });
+            continue;
+        }
+
+        // Directed edge: A --> B, A ==> B, A -.-> B (with optional |label|)
         match = line.match(/^(.+?)\s*(-{1,2}>|={1,2}>|-.->|-->)\s*(?:\|([^|]*)\|)?\s*(.+)$/);
         if (match) {
             const fromId = parseNodeRef(match[1].trim());
             const toId = parseNodeRef(match[4].trim());
             const edgeLabel = match[3] ? match[3].trim() : undefined;
-            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel });
+            if (fromId && toId) edges.push({ from: fromId, to: toId, label: edgeLabel, directed: true });
             continue;
         }
 
@@ -126,7 +144,14 @@ export function parseMermaid(src) {
         });
     });
 
-    return { title: 'Mermaid Diagram', nodes, edges: edges.map(e => ({ from: e.from, to: e.to, label: e.label })) };
+    return {
+        title: 'Mermaid Diagram',
+        nodes,
+        edges: edges.map(e => ({
+            from: e.from, to: e.to, label: e.label,
+            directed: e.directed !== false, // default directed
+        })),
+    };
 }
 
 // ============================================================
@@ -223,12 +248,18 @@ export function renderAIDiagram(diagram) {
     }
 
     // --- EDGES ---
-    // Pre-compute fan-out counts per source node so we can spread arrows
+    // Pre-compute fan-out counts per source node so we can spread edges
     const fanOut = new Map();
     const fanIdx = new Map();
     edges.forEach(e => {
         fanOut.set(e.from, (fanOut.get(e.from) || 0) + 1);
         fanIdx.set(e, fanOut.get(e.from) - 1);
+    });
+
+    // Collect all node bounds for overlap checking
+    const allNodeBounds = [];
+    nodeMap.forEach(n => {
+        allNodeBounds.push({ x: n.x, y: n.y, width: n.width, height: n.height });
     });
 
     for (const edge of edges) {
@@ -237,6 +268,10 @@ export function renderAIDiagram(diagram) {
 
         const count = fanOut.get(edge.from) || 1;
         const idx = fanIdx.get(edge);
+        const isDirected = edge.directed !== false;
+
+        // Determine edge routing style based on node alignment and context
+        const edgeStyle = chooseEdgeStyle(from, to, count, idx, allNodeBounds, nodeMap, edges);
 
         // Spread connection ports along the exit edge when fan-out > 1
         const sp = getSpreadEdgePoint(from, to, count, idx);
@@ -249,32 +284,73 @@ export function renderAIDiagram(diagram) {
         const spN = { x: sp.x + (adx / alen) * nudge, y: sp.y + (ady / alen) * nudge };
         const epN = { x: ep.x - (adx / alen) * nudge, y: ep.y - (ady / alen) * nudge };
 
-        if (window.Arrow) {
-            try {
-                // All arrows curved by default for clean diagram routing
-                // Fan-out > 1: spread curve amounts so arrows diverge
-                // Single edge: gentle curve to look professional
-                let curveAmount;
-                if (count > 1) {
-                    curveAmount = 40 + (idx - (count - 1) / 2) * 35;
-                } else {
-                    curveAmount = 30; // gentle default curve
-                }
+        let connector = null;
 
-                const arrow = new window.Arrow(spN, epN, {
+        if (isDirected && window.Arrow) {
+            // Use Arrow for directed edges
+            try {
+                const opts = {
                     stroke: '#e0e0e0', strokeWidth: 1.5, roughness: 1,
-                    arrowCurved: 'curved',
-                    arrowCurveAmount: curveAmount,
-                });
-                window.shapes.push(arrow);
-                if (window.pushCreateAction) window.pushCreateAction(arrow);
-                if (frame.addShapeToFrame) frame.addShapeToFrame(arrow);
+                };
+
+                if (edgeStyle.type === 'curved') {
+                    opts.arrowCurved = 'curved';
+                    opts.arrowCurveAmount = edgeStyle.curveAmount;
+                } else if (edgeStyle.type === 'elbow') {
+                    opts.arrowCurved = 'elbow';
+                }
+                // 'straight' — no arrowCurved needed (default)
+
+                connector = new window.Arrow(spN, epN, opts);
+                window.shapes.push(connector);
+                if (window.pushCreateAction) window.pushCreateAction(connector);
+                if (frame.addShapeToFrame) frame.addShapeToFrame(connector);
+
+                // Auto-attach arrow to source and target shapes
+                autoAttach(connector, from.shape, true, sp);
+                autoAttach(connector, to.shape, false, ep);
             } catch (err) {
                 console.warn('[AIRenderer] Arrow creation failed:', edge, err);
             }
+        } else if (!isDirected && window.Line) {
+            // Use Line for undirected edges
+            try {
+                const opts = {
+                    stroke: '#e0e0e0', strokeWidth: 1.5, roughness: 1,
+                };
+
+                connector = new window.Line(spN, epN, opts);
+
+                if (edgeStyle.type === 'curved') {
+                    connector.isCurved = true;
+                    if (typeof connector.initializeCurveControlPoint === 'function') {
+                        connector.initializeCurveControlPoint();
+                    }
+                    // Re-draw with curve since constructor drew it straight
+                    if (typeof connector.draw === 'function') connector.draw();
+                }
+
+                window.shapes.push(connector);
+                if (window.pushCreateAction) window.pushCreateAction(connector);
+                if (frame.addShapeToFrame) frame.addShapeToFrame(connector);
+            } catch (err) {
+                console.warn('[AIRenderer] Line creation failed:', edge, err);
+            }
+        } else if (window.Arrow) {
+            // Fallback: use Arrow if Line not available
+            try {
+                connector = new window.Arrow(spN, epN, {
+                    stroke: '#e0e0e0', strokeWidth: 1.5, roughness: 1,
+                });
+                window.shapes.push(connector);
+                if (window.pushCreateAction) window.pushCreateAction(connector);
+                if (frame.addShapeToFrame) frame.addShapeToFrame(connector);
+            } catch (err) {
+                console.warn('[AIRenderer] Fallback arrow creation failed:', edge, err);
+            }
         }
 
-        // Edge label near arrow midpoint
+        // Edge label near connector midpoint
         if (edge.label) {
             const mx = (spN.x + epN.x) / 2;
             const my = (spN.y + epN.y) / 2 - 18;
@@ -289,6 +365,195 @@ export function renderAIDiagram(diagram) {
 
     console.log(`[AIRenderer] Done: ${nodes.length} nodes, ${edges.length} edges → "${title}"`);
     return true;
+}
+
+// ============================================================
+// SMART EDGE ROUTING
+// ============================================================
+
+/**
+ * Choose the best edge style based on node positions and context.
+ * Returns { type: 'straight'|'curved'|'elbow', curveAmount?: number }
+ */
+function chooseEdgeStyle(from, to, fanCount, fanIdx, allNodeBounds, nodeMap, edges) {
+    const dx = Math.abs(from.centerX - to.centerX);
+    const dy = Math.abs(from.centerY - to.centerY);
+
+    // Multiple edges from same source — must curve to avoid overlap
+    if (fanCount > 1) {
+        const curveAmount = 40 + (fanIdx - (fanCount - 1) / 2) * 35;
+        return { type: 'curved', curveAmount };
+    }
+
+    // Check if nodes are aligned (horizontally or vertically)
+    const isHAligned = dx < ALIGN_THRESHOLD;
+    const isVAligned = dy < ALIGN_THRESHOLD;
+
+    // If aligned on either axis, use straight line
+    if (isHAligned || isVAligned) {
+        // But check if a straight line would cross through any other node
+        const sp = getEdgePoint(from, to);
+        const ep = getEdgePoint(to, from);
+        const blocked = wouldCrossNode(sp, ep, from, to, allNodeBounds);
+
+        if (blocked) {
+            // Use curved to route around
+            return { type: 'curved', curveAmount: 40 };
+        }
+        return { type: 'straight' };
+    }
+
+    // Diagonal connection — check if elbow or curve is better
+    // Elbow works well when nodes are in a grid-like arrangement
+    const isGridLike = (dx > ALIGN_THRESHOLD * 2) && (dy > ALIGN_THRESHOLD * 2);
+
+    if (isGridLike) {
+        // Check if elbow would cross another node
+        // Elbow goes horizontal then vertical (or vice versa)
+        const elbowMidX = to.centerX;
+        const elbowMidY = from.centerY;
+        const elbowMid = { x: elbowMidX, y: elbowMidY };
+
+        const seg1Blocked = wouldCrossNode(
+            { x: from.centerX, y: from.centerY }, elbowMid, from, to, allNodeBounds
+        );
+        const seg2Blocked = wouldCrossNode(
+            elbowMid, { x: to.centerX, y: to.centerY }, from, to, allNodeBounds
+        );
+
+        if (!seg1Blocked && !seg2Blocked) {
+            return { type: 'elbow' };
+        }
+    }
+
+    // Default: gentle curve for diagonal connections
+    return { type: 'curved', curveAmount: 25 };
+}
+
+/**
+ * Check if a straight line between two points would cross through any node
+ * (excluding the source and target nodes themselves).
+ */
+function wouldCrossNode(p1, p2, fromNode, toNode, allNodeBounds) {
+    const margin = 10;
+    for (const bounds of allNodeBounds) {
+        // Skip source and target nodes
+        if (bounds.x === fromNode.x && bounds.y === fromNode.y) continue;
+        if (bounds.x === toNode.x && bounds.y === toNode.y) continue;
+
+        // Inflate node bounds slightly for margin
+        const bx = bounds.x - margin;
+        const by = bounds.y - margin;
+        const bw = bounds.width + margin * 2;
+        const bh = bounds.height + margin * 2;
+
+        if (lineIntersectsRect(p1.x, p1.y, p2.x, p2.y, bx, by, bw, bh)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Check if a line segment intersects a rectangle.
+ */
+function lineIntersectsRect(x1, y1, x2, y2, rx, ry, rw, rh) {
+    // Check if line segment intersects any of the 4 edges of the rect
+    const left = rx, right = rx + rw, top = ry, bottom = ry + rh;
+
+    // Quick bounding box rejection
+    if (Math.max(x1, x2) < left || Math.min(x1, x2) > right) return false;
+    if (Math.max(y1, y2) < top || Math.min(y1, y2) > bottom) return false;
+
+    // Check if either endpoint is inside the rect
+    if (x1 >= left && x1 <= right && y1 >= top && y1 <= bottom) return true;
+    if (x2 >= left && x2 <= right && y2 >= top && y2 <= bottom) return true;
+
+    // Check line intersection with each edge
+    return (
+        segmentsIntersect(x1, y1, x2, y2, left, top, right, top) ||
+        segmentsIntersect(x1, y1, x2, y2, right, top, right, bottom) ||
+        segmentsIntersect(x1, y1, x2, y2, left, bottom, right, bottom) ||
+        segmentsIntersect(x1, y1, x2, y2, left, top, left, bottom)
+    );
+}
+
+function segmentsIntersect(ax1, ay1, ax2, ay2, bx1, by1, bx2, by2) {
+    const d1 = cross(bx1, by1, bx2, by2, ax1, ay1);
+    const d2 = cross(bx1, by1, bx2, by2, ax2, ay2);
+    const d3 = cross(ax1, ay1, ax2, ay2, bx1, by1);
+    const d4 = cross(ax1, ay1, ax2, ay2, bx2, by2);
+
+    if (((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
+        ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))) {
+        return true;
+    }
+    return false;
+}
+
+function cross(ax, ay, bx, by, cx, cy) {
+    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+}
+
+// ============================================================
+// AUTO-ATTACHMENT
+// ============================================================
+
+/**
+ * Automatically attach an arrow endpoint to a shape.
+ * This makes edges follow nodes when they're moved.
+ */
+function autoAttach(arrow, shape, isStart, contactPoint) {
+    if (!arrow || !shape) return;
+    if (typeof arrow.attachToShape !== 'function') return;
+
+    try {
+        // Determine attachment side based on contact point relative to shape
+        let side, offset;
+
+        if (shape.shapeName === 'rectangle' || shape.shapeName === 'frame') {
+            const sx = shape.x, sy = shape.y, sw = shape.width, sh = shape.height;
+            const cx = sx + sw / 2, cy = sy + sh / 2;
+
+            // Determine which edge the contact point is closest to
+            const distTop = Math.abs(contactPoint.y - sy);
+            const distBottom = Math.abs(contactPoint.y - (sy + sh));
+            const distLeft = Math.abs(contactPoint.x - sx);
+            const distRight = Math.abs(contactPoint.x - (sx + sw));
+            const minDist = Math.min(distTop, distBottom, distLeft, distRight);
+
+            if (minDist === distTop) {
+                side = 'top';
+                offset = { x: contactPoint.x - sx, y: 0, side: 'top' };
+            } else if (minDist === distBottom) {
+                side = 'bottom';
+                offset = { x: contactPoint.x - sx, y: sh, side: 'bottom' };
+            } else if (minDist === distLeft) {
+                side = 'left';
+                offset = { x: 0, y: contactPoint.y - sy, side: 'left' };
+            } else {
+                side = 'right';
+                offset = { x: sw, y: contactPoint.y - sy, side: 'right' };
+            }
+
+            const attachment = { side, point: contactPoint, offset };
+            arrow.attachToShape(isStart, shape, attachment);
+        } else if (shape.shapeName === 'circle') {
+            const angle = Math.atan2(
+                contactPoint.y - shape.y,
+                contactPoint.x - shape.x
+            );
+            const attachment = {
+                side: 'perimeter',
+                point: contactPoint,
+                offset: { angle, side: 'perimeter' },
+            };
+            arrow.attachToShape(isStart, shape, attachment);
+        }
+    } catch (err) {
+        // Attachment is optional — don't fail the render
+        console.warn('[AIRenderer] Auto-attach failed:', err);
+    }
 }
 
 // ============================================================
@@ -383,11 +648,112 @@ function getEdgePoint(node, targetNode) {
     return { x: node.x, y: node.centerY };
 }
 
+// ============================================================
+// PREVIEW (for AI Modal)
+// ============================================================
+
+/**
+ * Generate a simple SVG preview string from a diagram JSON.
+ * Used inside the AI modal before placing on canvas.
+ */
+export function generatePreviewSVG(diagram, width = 500, height = 350) {
+    if (!diagram?.nodes?.length) return '';
+
+    const nodes = diagram.nodes;
+    const edges = diagram.edges || [];
+
+    // Compute bounds
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+        maxX = Math.max(maxX, n.x + (n.width || NODE_W));
+        maxY = Math.max(maxY, n.y + (n.height || NODE_H));
+    });
+
+    const dw = maxX - minX || 1;
+    const dh = maxY - minY || 1;
+    const pad = 40;
+    const scale = Math.min((width - pad * 2) / dw, (height - pad * 2) / dh, 1.5);
+    const offX = (width - dw * scale) / 2 - minX * scale;
+    const offY = (height - dh * scale) / 2 - minY * scale;
+
+    // Build node lookup for edge rendering
+    const nodeById = new Map();
+    nodes.forEach(n => {
+        const nx = n.x * scale + offX;
+        const ny = n.y * scale + offY;
+        const nw = (n.width || NODE_W) * scale;
+        const nh = (n.height || NODE_H) * scale;
+        nodeById.set(n.id, { x: nx, y: ny, w: nw, h: nh, cx: nx + nw / 2, cy: ny + nh / 2 });
+    });
+
+    let svgContent = '';
+
+    // Draw edges
+    edges.forEach(e => {
+        const f = nodeById.get(e.from);
+        const t = nodeById.get(e.to);
+        if (!f || !t) return;
+
+        const directed = e.directed !== false;
+        const markerId = directed ? 'url(#preview-arrow)' : '';
+
+        svgContent += `<line x1="${f.cx}" y1="${f.cy}" x2="${t.cx}" y2="${t.cy}" stroke="#666" stroke-width="1.5" marker-end="${markerId}" />`;
+
+        if (e.label) {
+            const mx = (f.cx + t.cx) / 2;
+            const my = (f.cy + t.cy) / 2 - 8;
+            svgContent += `<text x="${mx}" y="${my}" text-anchor="middle" fill="#888" font-size="9" font-family="lixFont, sans-serif">${escapeXml(e.label)}</text>`;
+        }
+    });
+
+    // Draw nodes
+    nodes.forEach(n => {
+        const d = nodeById.get(n.id);
+        if (!d) return;
+
+        if (n.type === 'circle') {
+            svgContent += `<ellipse cx="${d.cx}" cy="${d.cy}" rx="${d.w / 2}" ry="${d.h / 2}" fill="transparent" stroke="#9090c0" stroke-width="1.5" />`;
+        } else if (n.type === 'diamond') {
+            const sz = Math.min(d.w, d.h) * 0.7;
+            svgContent += `<rect x="${d.cx - sz / 2}" y="${d.cy - sz / 2}" width="${sz}" height="${sz}" fill="transparent" stroke="#9090c0" stroke-width="1.5" transform="rotate(45, ${d.cx}, ${d.cy})" />`;
+        } else {
+            svgContent += `<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="4" fill="transparent" stroke="#9090c0" stroke-width="1.5" />`;
+        }
+
+        // Label
+        if (n.label) {
+            const fontSize = Math.max(8, Math.min(12, 11 * scale));
+            svgContent += `<text x="${d.cx}" y="${d.cy}" text-anchor="middle" dominant-baseline="central" fill="#d0d0d0" font-size="${fontSize}" font-family="lixFont, sans-serif">${escapeXml(n.label)}</text>`;
+        }
+    });
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <defs>
+    <marker id="preview-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#666" stroke-width="1" />
+    </marker>
+  </defs>
+  ${svgContent}
+</svg>`;
+}
+
+function escapeXml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
 export function initAIRenderer() {
     window.__aiRenderer = renderAIDiagram;
+    window.__aiPreview = generatePreviewSVG;
     window.__mermaidRenderer = (src) => {
         const diagram = parseMermaid(src);
         if (!diagram) { console.error('[AIRenderer] Mermaid parse failed'); return false; }
         return renderAIDiagram(diagram);
     };
+    window.__mermaidParser = parseMermaid;
 }

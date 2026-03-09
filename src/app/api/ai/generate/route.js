@@ -24,7 +24,8 @@ Required JSON schema:
     {
       "from": "string — source node id",
       "to": "string — target node id",
-      "label": "string (optional) — edge label (1-3 words)"
+      "label": "string (optional) — edge label (1-3 words)",
+      "directed": "boolean (optional) — true for arrows (default), false for plain lines"
     }
   ]
 }
@@ -33,6 +34,10 @@ Shape type guidelines:
 - "rectangle": processes, actions, services, pages, components, entities, data stores, API endpoints
 - "circle": start/end terminals, events, triggers, status indicators
 - "diamond": decisions, conditions, branching logic, yes/no gates, validations
+
+Edge direction guidelines:
+- Use "directed": true (default) for flow direction — arrows show cause/effect, sequence, data flow
+- Use "directed": false for associations, relationships, or bidirectional connections
 
 Layout rules:
 - Arrange nodes in a logical top-to-bottom or left-to-right flow
@@ -68,9 +73,17 @@ const USER_PROMPT_MERMAID = (prompt) =>
 Mermaid syntax:
 ${prompt}`
 
+const USER_PROMPT_EDIT = (prompt, previousDiagram) =>
+  `You previously generated this diagram:
+${JSON.stringify(previousDiagram, null, 2)}
+
+The user wants to modify it. Apply the following edit while keeping the existing structure as much as possible. Return the complete updated diagram JSON (not just the changes).
+
+Edit request: ${prompt}`
+
 export async function POST(request) {
   try {
-    const { prompt, mode } = await request.json()
+    const { prompt, mode, history, previousDiagram } = await request.json()
 
     if (!prompt || !prompt.trim()) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -81,14 +94,42 @@ export async function POST(request) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
-    const userMessage = mode === 'mermaid'
-      ? USER_PROMPT_MERMAID(prompt)
-      : USER_PROMPT_TEXT(prompt)
+    // Build the user message based on context
+    let userMessage
+    if (previousDiagram && previousDiagram.nodes) {
+      // Edit mode — modify existing diagram
+      userMessage = USER_PROMPT_EDIT(prompt, previousDiagram)
+    } else if (mode === 'mermaid') {
+      userMessage = USER_PROMPT_MERMAID(prompt)
+    } else {
+      userMessage = USER_PROMPT_TEXT(prompt)
+    }
 
-    console.log('[AI Generate] Request:', { mode, promptLength: prompt.length })
+    console.log('[AI Generate] Request:', {
+      mode,
+      promptLength: prompt.length,
+      isEdit: !!previousDiagram,
+      historyLength: history?.length || 0,
+    })
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 45000)
+
+    // Build messages array with conversation history for context
+    const messages = [{ role: 'system', content: SYSTEM_PROMPT }]
+
+    // Include relevant history for multi-turn edits
+    if (history && Array.isArray(history) && history.length > 0) {
+      // Only include the last few turns to keep context manageable
+      const recentHistory = history.slice(-4)
+      recentHistory.forEach(msg => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          messages.push({ role: msg.role, content: msg.content })
+        }
+      })
+    }
+
+    messages.push({ role: 'user', content: userMessage })
 
     const response = await fetch(POLLINATIONS_URL, {
       method: 'POST',
@@ -98,10 +139,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         model: 'gemini-fast',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage },
-        ],
+        messages,
         temperature: 0.2,
       }),
       signal: controller.signal,
