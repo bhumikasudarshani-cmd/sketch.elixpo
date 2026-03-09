@@ -26,12 +26,12 @@ export default function IconSidebar() {
   const fetchIcons = useCallback(async (searchQuery, cat) => {
     setLoading(true)
     try {
-      let q = searchQuery || ''
-      if (cat && !q) q = cat
-      else if (cat && q) q = `${cat} ${q}`
+      const params = new URLSearchParams()
+      if (searchQuery) params.set('q', searchQuery)
+      if (cat) params.set('category', cat)
+      if (!searchQuery && !cat) params.set('q', '')
 
-      const url = q ? `/api/icons/search?q=${encodeURIComponent(q)}` : `/api/icons/feed?offset=0&limit=60`
-      const res = await fetch(url)
+      const res = await fetch(`/api/icons/search?${params.toString()}`)
       if (res.ok) {
         const data = await res.json()
         setIcons(data.results || [])
