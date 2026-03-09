@@ -15,6 +15,23 @@ import { handleMouseDownIcon, handleMouseMoveIcon, handleMouseUpIcon } from '../
 import { handleCodeMouseDown, handleCodeMouseMove, handleCodeMouseUp } from '../tools/codeTool.js';
 
 const handleMainMouseDown = (e) => {
+    // For non-selection tools: deselect everything when clicking on empty canvas
+    // (Selection tool handles its own deselection in handleMultiSelectionMouseDown)
+    if (!isSelectionToolActive) {
+        // Clear multi-selection for any tool switch
+        if (multiSelection.selectedShapes.size > 0) {
+            multiSelection.clearSelection();
+        }
+        // Deselect current individual shape when starting a new tool action
+        if (currentShape && typeof currentShape.removeSelection === 'function') {
+            currentShape.removeSelection();
+            currentShape = null;
+        }
+        if (typeof disableAllSideBars === 'function') {
+            disableAllSideBars();
+        }
+    }
+
     if (isSquareToolActive) {
         handleMouseDownRect(e);
     } else if (isArrowToolActive) {
