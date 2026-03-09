@@ -43,28 +43,55 @@ export async function POST(request) {
       ? `Convert this Mermaid diagram to the JSON format:\n\n${prompt}`
       : `Generate a diagram for: ${prompt}`
 
-    const response = await fetch(POLLINATIONS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gemini-fast',
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userMessage },
-        ],
-        temperature: 0.3,
-      }),
-    })
+    // Try the primary endpoint first, fallback to alternative
+    let response
+    let lastError
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[AI Generate] API error:', response.status, errorText)
+    const endpoints = [
+      POLLINATIONS_URL,
+      'https://gen.pollinations.ai/v1/chat/completions',
+    ]
+
+    for (const url of endpoints) {
+      try {
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 30000)
+
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: 'openai',
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: userMessage },
+            ],
+            temperature: 0.3,
+            jsonMode: true,
+            seed: 42,
+          }),
+          signal: controller.signal,
+        })
+
+        clearTimeout(timeout)
+
+        if (response.ok) break
+        lastError = `${url} returned ${response.status}`
+      } catch (fetchErr) {
+        lastError = `${url}: ${fetchErr.message}`
+        response = null
+        continue
+      }
+    }
+
+    if (!response || !response.ok) {
+      console.error('[AI Generate] All endpoints failed:', lastError)
       return NextResponse.json(
-        { error: 'AI generation failed' },
-        { status: response.status }
+        { error: 'AI service unavailable. Please try again.' },
+        { status: 502 }
       )
     }
 
@@ -82,12 +109,12 @@ export async function POST(request) {
       diagram = JSON.parse(cleaned)
     } catch (parseErr) {
       console.error('[AI Generate] JSON parse error:', parseErr, 'Content:', content)
-      return NextResponse.json({ error: 'Invalid AI response format' }, { status: 500 })
+      return NextResponse.json({ error: 'AI returned invalid format. Try again.' }, { status: 500 })
     }
 
     // Validate structure
-    if (!diagram.nodes || !Array.isArray(diagram.nodes)) {
-      return NextResponse.json({ error: 'Invalid diagram structure' }, { status: 500 })
+    if (!diagram.nodes || !Array.isArray(diagram.nodes) || diagram.nodes.length === 0) {
+      return NextResponse.json({ error: 'AI returned empty diagram. Try rephrasing.' }, { status: 500 })
     }
 
     return NextResponse.json({ diagram })
