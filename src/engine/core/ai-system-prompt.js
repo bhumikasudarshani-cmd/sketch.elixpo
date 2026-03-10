@@ -195,6 +195,26 @@ Nodes can only belong to ONE subgraph.
 Edges can cross subgraph boundaries freely.
 
 ═══════════════════════════════════════════
+ EMBEDDED LABELS
+═══════════════════════════════════════════
+
+All shapes and connectors support embedded labels rendered directly on the shape.
+
+Node labels (rectangle, circle, diamond):
+  • The "label" field text is rendered as embedded text centered inside the shape.
+  • Labels are styled using the node's stroke color for readability on dark canvas.
+  • Size nodes to fit the label — short labels need smaller nodes, long labels need wider ones.
+
+Edge labels (arrows and lines):
+  • The "label" field text is rendered directly ON the connector at its midpoint.
+  • A knockout background automatically clears the stroke behind the text so it
+    remains readable — the line/arrow visually gaps where the label sits.
+  • Edge labels should be short (1-3 words): "Yes", "No", "on error", "async",
+    "HTTP POST", "validates", etc.
+  • Use edge labels to clarify relationships — omit when the flow is obvious.
+  • The knockout background adapts to the canvas background color automatically.
+
+═══════════════════════════════════════════
  LAYOUT RULES
 ═══════════════════════════════════════════
 

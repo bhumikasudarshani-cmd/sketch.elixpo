@@ -230,15 +230,17 @@ class Line {
         this.labelElement.textContent = this.label;
 
         // Background knockout rect - hides the line behind the text
+        const canvasBg = window.getComputedStyle(svg).backgroundColor || '#000';
         if (!this._labelBg) {
             this._labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            this._labelBg.setAttribute('fill', '#121212');
             this._labelBg.setAttribute('pointer-events', 'none');
         }
-        const padding = 4;
+        this._labelBg.setAttribute('fill', canvasBg);
+        const hPadding = 4;
+        const vPadding = 1;
         const charWidth = this.labelFontSize * 0.6;
-        const bgW = this.label.length * charWidth + padding * 2;
-        const bgH = this.labelFontSize + padding * 2;
+        const bgW = this.label.length * charWidth + hPadding * 2;
+        const bgH = this.labelFontSize + vPadding * 2;
         this._labelBg.setAttribute('x', mid.x - bgW / 2);
         this._labelBg.setAttribute('y', mid.y - bgH / 2);
         this._labelBg.setAttribute('width', bgW);
