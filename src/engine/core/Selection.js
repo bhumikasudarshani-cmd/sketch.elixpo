@@ -1681,6 +1681,7 @@ function deleteSelectedShapes() {
 // Expose for plain scripts (sketchGeneric.js is not a module)
 window.clearAllSelections = clearAllSelections;
 window.multiSelection = multiSelection;
+window.deleteSelectedShapes = deleteSelectedShapes;
 
 export {
     handleMultiSelectionMouseDown,
