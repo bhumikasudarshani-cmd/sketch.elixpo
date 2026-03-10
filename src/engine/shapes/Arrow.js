@@ -51,14 +51,20 @@ class Arrow {
         this.shapeID = `arrow-${String(Date.now()).slice(0, 8)}-${Math.floor(Math.random() * 10000)}`;
         this.group.setAttribute('id', this.shapeID);
 
+        // Embedded label support
+        this.label = options.label || '';
+        this.labelElement = null;
+        this.labelColor = options.labelColor || '#e0e0e0';
+        this.labelFontSize = options.labelFontSize || 12;
+        this._isEditingLabel = false;
+
         // Initialize control points if curved
         if (this.arrowCurved === "curved" && !this.controlPoint1 && !this.controlPoint2) {
             this.initializeCurveControlPoints();
         }
 
-        
-
         svg.appendChild(this.group);
+        this._setupLabelDblClick();
         this.draw();
     }
 
@@ -214,9 +220,14 @@ class Arrow {
     }
 
     draw() {
-        while (this.group.firstChild) {
-            this.group.removeChild(this.group.firstChild);
+        const childrenToRemove = [];
+        for (let i = 0; i < this.group.children.length; i++) {
+            const child = this.group.children[i];
+            if (child !== this.labelElement) {
+                childrenToRemove.push(child);
+            }
         }
+        childrenToRemove.forEach(child => this.group.removeChild(child));
         this.anchors = [];
 
         let pathData;
@@ -296,10 +307,135 @@ class Arrow {
         this.element = arrowPath;
         this.group.appendChild(this.element);
 
+        // Update embedded label at midpoint
+        this._updateLabelElement();
+
         if (this.isSelected) {
             this.addAnchors();
             this.addAttachmentIndicators();
         }
+    }
+
+    _getMidpoint() {
+        if (this.arrowCurved === "curved" && this.controlPoint1 && this.controlPoint2) {
+            const p = this.getCubicBezierPoint(0.5);
+            return { x: p.x, y: p.y };
+        }
+        if (this.arrowCurved === "elbow") {
+            const ex = this.elbowX !== null ? this.elbowX : (this.startPoint.x + this.endPoint.x) / 2;
+            return { x: ex, y: (this.startPoint.y + this.endPoint.y) / 2 };
+        }
+        return {
+            x: (this.startPoint.x + this.endPoint.x) / 2,
+            y: (this.startPoint.y + this.endPoint.y) / 2
+        };
+    }
+
+    _updateLabelElement() {
+        if (!this.label) {
+            if (this.labelElement && this.labelElement.parentNode === this.group) {
+                this.group.removeChild(this.labelElement);
+                this.labelElement = null;
+            }
+            return;
+        }
+
+        if (!this.labelElement) {
+            this.labelElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            this.labelElement.setAttribute('class', 'shape-label');
+            this.labelElement.setAttribute('pointer-events', 'none');
+        }
+
+        const mid = this._getMidpoint();
+        this.labelElement.setAttribute('x', mid.x);
+        this.labelElement.setAttribute('y', mid.y - 10);
+        this.labelElement.setAttribute('text-anchor', 'middle');
+        this.labelElement.setAttribute('dominant-baseline', 'auto');
+        this.labelElement.setAttribute('fill', this.labelColor);
+        this.labelElement.setAttribute('font-size', this.labelFontSize);
+        this.labelElement.setAttribute('font-family', 'lixFont, sans-serif');
+        this.labelElement.textContent = this.label;
+
+        if (this.labelElement.parentNode !== this.group) {
+            this.group.appendChild(this.labelElement);
+        }
+    }
+
+    _setupLabelDblClick() {
+        this.group.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.startLabelEdit();
+        });
+    }
+
+    startLabelEdit() {
+        if (this._isEditingLabel) return;
+        this._isEditingLabel = true;
+
+        if (this.labelElement) {
+            this.labelElement.setAttribute('visibility', 'hidden');
+        }
+
+        const mid = this._getMidpoint();
+        const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+        const editW = 140;
+        const editH = 30;
+        fo.setAttribute('x', mid.x - editW / 2);
+        fo.setAttribute('y', mid.y - editH - 4);
+        fo.setAttribute('width', editW);
+        fo.setAttribute('height', editH);
+
+        const input = document.createElement('div');
+        input.setAttribute('contenteditable', 'true');
+        input.style.cssText = `
+            width: 100%; height: 100%;
+            background: rgba(18,18,18,0.85); border: 1px solid #5B57D1; border-radius: 4px;
+            outline: none; color: ${this.labelColor}; font-size: ${this.labelFontSize}px;
+            font-family: lixFont, sans-serif; text-align: center;
+            display: flex; align-items: center; justify-content: center;
+            white-space: pre-wrap; word-break: break-word; padding: 2px 6px;
+            overflow: hidden; cursor: text;
+        `;
+        input.textContent = this.label;
+
+        fo.appendChild(input);
+        this.group.appendChild(fo);
+
+        setTimeout(() => {
+            input.focus();
+            const sel = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(input);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }, 10);
+
+        const finishEdit = () => {
+            const newText = input.textContent.trim();
+            this.label = newText;
+            this._isEditingLabel = false;
+            if (fo.parentNode) fo.parentNode.removeChild(fo);
+            if (this.labelElement) this.labelElement.setAttribute('visibility', 'visible');
+            this.draw();
+        };
+
+        input.addEventListener('blur', finishEdit);
+        input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); input.blur(); }
+            if (e.key === 'Escape') { input.textContent = this.label; input.blur(); }
+        });
+        input.addEventListener('mousedown', (e) => e.stopPropagation());
+        input.addEventListener('mousemove', (e) => e.stopPropagation());
+        input.addEventListener('mouseup', (e) => e.stopPropagation());
+    }
+
+    setLabel(text, color, fontSize) {
+        this.label = text || '';
+        if (color) this.labelColor = color;
+        if (fontSize) this.labelFontSize = fontSize;
+        this.draw();
     }
 
     getCubicBezierPoint(t) {
