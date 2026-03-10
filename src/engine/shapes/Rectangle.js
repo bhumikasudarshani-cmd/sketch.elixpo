@@ -67,11 +67,11 @@ class Rectangle {
     }
     draw() {
         const childrenToRemove = [];
-        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
+        const preserveSet = this._skipAnchors ? new Set([...this.anchors, this.selectionOutline, this.rotationAnchor].filter(Boolean)) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.element && child !== this.labelElement && child !== this._hitArea) {
-                if (anchorSet && anchorSet.has(child)) continue;
+                if (preserveSet && preserveSet.has(child)) continue;
                 childrenToRemove.push(child);
             }
         }

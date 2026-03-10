@@ -119,11 +119,11 @@ class Line {
     draw() {
         // Clear existing elements but preserve label, hit area, and anchors during active resize
         const childrenToRemove = [];
-        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
+        const preserveSet = this._skipAnchors ? new Set([...this.anchors, this.selectionOutline].filter(Boolean)) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.labelElement && child !== this._hitArea && child !== this._labelBg) {
-                if (anchorSet && anchorSet.has(child)) continue;
+                if (preserveSet && preserveSet.has(child)) continue;
                 childrenToRemove.push(child);
             }
         }
