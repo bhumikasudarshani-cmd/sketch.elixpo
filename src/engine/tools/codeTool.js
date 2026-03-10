@@ -95,11 +95,11 @@ function addCodeBlock(event) {
     backgroundRect.setAttribute("y", -10); // Padding
     backgroundRect.setAttribute("width", 300); // Initial width
     backgroundRect.setAttribute("height", 60); // Initial height
-    backgroundRect.setAttribute("fill", "#212121"); // Dark background
-    backgroundRect.setAttribute("stroke", "#666");
+    backgroundRect.setAttribute("fill", "#161b22"); // GitHub dark background
+    backgroundRect.setAttribute("stroke", "#30363d");
     backgroundRect.setAttribute("stroke-width", "1");
-    backgroundRect.setAttribute("rx", "4"); // Rounded corners
-    backgroundRect.setAttribute("ry", "4");
+    backgroundRect.setAttribute("rx", "6"); // Rounded corners
+    backgroundRect.setAttribute("ry", "6");
     gElement.appendChild(backgroundRect);
 
     // Create SVG text element
@@ -223,10 +223,10 @@ function makeCodeEditable(codeElement, groupElement, clickEvent = null) {
     editorContainer.className = "svg-code-container";
     editorContainer.style.position = "absolute";
     editorContainer.style.zIndex = "10000";
-    editorContainer.style.backgroundColor = "#1e1e1e";
-    editorContainer.style.border = "1px solid #666";
-    editorContainer.style.borderRadius = "4px";
-    editorContainer.style.padding = "8px";
+    editorContainer.style.backgroundColor = "#161b22";
+    editorContainer.style.border = "1px solid #30363d";
+    editorContainer.style.borderRadius = "6px";
+    editorContainer.style.padding = "12px";
     editorContainer.style.fontFamily = "monospace";
     editorContainer.style.overflow = "hidden";
     editorContainer.style.minWidth = "200px";
@@ -241,16 +241,15 @@ function makeCodeEditable(codeElement, groupElement, clickEvent = null) {
     input.style.maxHeight = "400px";
     input.style.overflowY = "auto";
     input.style.whiteSpace = "pre";
-    input.style.fontFamily = "Consolas, 'Courier New', monospace";
+    input.style.fontFamily = "lixCode, Consolas, 'Courier New', monospace";
     input.style.fontSize = codeElement.getAttribute("font-size") || codeTextSize;
-    input.style.color = "#d4d4d4";
+    input.style.color = "#c9d1d9";
     input.style.lineHeight = "1.4";
     input.style.tabSize = "4";
     input.style.background = "transparent";
 
     // FIXED: Use the improved text extraction
     let codeContent = extractTextFromCodeElement(codeElement);
-    console.log("Extracted code content:", JSON.stringify(codeContent)); // Debug log
 
     // Set initial content with plain text (no highlighting initially)
     input.textContent = codeContent;
@@ -951,34 +950,34 @@ function processHighlightedNodes(node, parentTspan) {
 
 
 function applyHighlightColor(tspan, className) {
-    // VS Code Dark Theme colors
+    // GitHub Dark Dimmed theme colors
     if (className.includes('hljs-keyword') || className.includes('hljs-built_in')) {
-        tspan.setAttribute("fill", "#569cd6"); // Blue
+        tspan.setAttribute("fill", "#ff7b72"); // Red (keywords)
     } else if (className.includes('hljs-string') || className.includes('hljs-template-string')) {
-        tspan.setAttribute("fill", "#ce9178"); // Orange
+        tspan.setAttribute("fill", "#a5d6ff"); // Light blue (strings)
     } else if (className.includes('hljs-comment')) {
-        tspan.setAttribute("fill", "#6a9955"); // Green
+        tspan.setAttribute("fill", "#8b949e"); // Gray (comments)
         tspan.setAttribute("font-style", "italic");
     } else if (className.includes('hljs-number') || className.includes('hljs-literal')) {
-        tspan.setAttribute("fill", "#b5cea8"); // Light green
+        tspan.setAttribute("fill", "#79c0ff"); // Blue (numbers/literals)
     } else if (className.includes('hljs-function') || className.includes('hljs-title')) {
-        tspan.setAttribute("fill", "#dcdcaa"); // Yellow
+        tspan.setAttribute("fill", "#d2a8ff"); // Purple (functions)
     } else if (className.includes('hljs-variable') || className.includes('hljs-name')) {
-        tspan.setAttribute("fill", "#9cdcfe"); // Light blue
+        tspan.setAttribute("fill", "#ffa657"); // Orange (variables)
     } else if (className.includes('hljs-type') || className.includes('hljs-class')) {
-        tspan.setAttribute("fill", "#4ec9b0"); // Teal
+        tspan.setAttribute("fill", "#f0883e"); // Orange (types)
     } else if (className.includes('hljs-operator') || className.includes('hljs-punctuation')) {
-        tspan.setAttribute("fill", "#d4d4d4"); // Light gray
+        tspan.setAttribute("fill", "#c9d1d9"); // Light gray (operators)
     } else if (className.includes('hljs-property') || className.includes('hljs-attribute')) {
-        tspan.setAttribute("fill", "#92c5f8"); // Light blue
+        tspan.setAttribute("fill", "#79c0ff"); // Blue (properties)
     } else if (className.includes('hljs-tag')) {
-        tspan.setAttribute("fill", "#569cd6"); // Blue for HTML tags
+        tspan.setAttribute("fill", "#7ee787"); // Green (HTML tags)
     } else if (className.includes('hljs-meta') || className.includes('hljs-doctag')) {
-        tspan.setAttribute("fill", "#9b9b9b"); // Gray
+        tspan.setAttribute("fill", "#8b949e"); // Gray (meta)
     } else if (className.includes('hljs-regexp')) {
-        tspan.setAttribute("fill", "#d16969"); // Red
+        tspan.setAttribute("fill", "#a5d6ff"); // Light blue (regex)
     } else {
-        tspan.setAttribute("fill", codeTextColor); // Default color
+        tspan.setAttribute("fill", "#c9d1d9"); // GitHub default text color
     }
 }
 
@@ -1227,16 +1226,8 @@ function selectCodeBlock(groupElement) {
     toggleSpans.forEach(el => {
         if (el.getAttribute("data-id") === "true") el.classList.add("selected");
     });
-    // Show the text/code property panel
-    const textSideBar = document.getElementById("textToolBar");
-    if (textSideBar) textSideBar.classList.remove("hidden");
-    const langSelector = document.getElementById("textLanguageSelector");
-    if (langSelector) langSelector.classList.remove("hidden");
-    const langSelect = document.getElementById("codeLanguageSelect");
-    if (langSelect) {
-        const codeEl = groupElement.querySelector('text');
-        langSelect.value = codeEl?.getAttribute("data-language") || "auto";
-    }
+    // Show the text/code property panel via React bridge (pass 'code' to set code mode)
+    if (window.__showSidebarForShape) window.__showSidebarForShape('code');
 }
 
 function deselectCodeBlock() {
@@ -2045,7 +2036,7 @@ const editorStyles = `
 
 .svg-code-editor {
     scrollbar-width: thin;
-    scrollbar-color: #666 #2d2d2d;
+    scrollbar-color: #484f58 #161b22;
 }
 
 .svg-code-editor::-webkit-scrollbar {
@@ -2054,17 +2045,17 @@ const editorStyles = `
 }
 
 .svg-code-editor::-webkit-scrollbar-track {
-    background: #2d2d2d;
-    border-radius: 4px;
+    background: #161b22;
+    border-radius: 6px;
 }
 
 .svg-code-editor::-webkit-scrollbar-thumb {
-    background: #666;
-    border-radius: 4px;
+    background: #484f58;
+    border-radius: 6px;
 }
 
 .svg-code-editor::-webkit-scrollbar-thumb:hover {
-    background: #888;
+    background: #6e7681;
 }
 
 /* Language detection indicator */

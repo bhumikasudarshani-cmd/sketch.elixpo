@@ -271,7 +271,7 @@ function makeTextEditable(textElement, groupElement) {
     input.style.lineHeight = "1.2em";
     input.style.textAlign = currentAnchor === "middle" ? "center" : currentAnchor === "end" ? "right" : "left";
     input.style.backgroundColor = "transparent";
-    input.style.border = "1px dashed rgba(255,255,255,0.3)";
+    input.style.border = "none";
     input.style.outline = "none";
     document.body.appendChild(input);
 
@@ -1601,11 +1601,11 @@ function convertTextToCode(textGroupElement) {
     backgroundRect.setAttribute("y", -10);
     backgroundRect.setAttribute("width", 300);
     backgroundRect.setAttribute("height", 60);
-    backgroundRect.setAttribute("fill", "#212121");
-    backgroundRect.setAttribute("stroke", "#666");
+    backgroundRect.setAttribute("fill", "#161b22");
+    backgroundRect.setAttribute("stroke", "#30363d");
     backgroundRect.setAttribute("stroke-width", "1");
-    backgroundRect.setAttribute("rx", "4");
-    backgroundRect.setAttribute("ry", "4");
+    backgroundRect.setAttribute("rx", "6");
+    backgroundRect.setAttribute("ry", "6");
     gElement.appendChild(backgroundRect);
 
     const codeElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -1793,5 +1793,35 @@ window.updateSelectedTextStyle = function(changes) {
 
 // Expose deselectElement for external callers (Selection.js blank canvas click)
 window.__deselectTextElement = deselectElement;
+
+// React sidebar bridge — text ↔ code conversion
+window.__convertTextToCode = function() {
+    if (selectedElement && selectedElement.getAttribute('data-type') === 'text-group') {
+        convertTextToCode(selectedElement);
+    }
+};
+window.__convertCodeToText = function() {
+    const codeBlock = getSelectedCodeBlock();
+    if (codeBlock) {
+        convertCodeToText(codeBlock);
+    }
+};
+window.__setCodeLanguage = function(lang) {
+    setCodeLanguage(lang);
+    // Re-highlight selected code block with new language
+    const selectedCode = getSelectedCodeBlock();
+    if (selectedCode) {
+        const codeElement = selectedCode.querySelector('text');
+        if (codeElement) {
+            codeElement.setAttribute('data-language', lang);
+            const textContent = extractTextFromCodeElement(codeElement);
+            // Clear and re-highlight
+            while (codeElement.firstChild) codeElement.removeChild(codeElement.firstChild);
+            const highlighted = applySyntaxHighlightingToSVG(textContent, lang);
+            createHighlightedSVGText(highlighted, codeElement);
+            updateCodeBackground(selectedCode, codeElement);
+        }
+    }
+};
 
 export { handleTextMouseDown, handleTextMouseMove, handleTextMouseUp, updateCodeToggleForShape, deselectElement as deselectTextElement };

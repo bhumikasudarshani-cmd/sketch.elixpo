@@ -155,6 +155,9 @@ class SketchEngine {
             if (sidebar && window.__sketchStoreApi) {
                 window.__sketchStoreApi.setSelectedShapeSidebar(sidebar);
             }
+            // Tell sidebar whether the selected shape is code mode
+            window.__selectedShapeIsCode = (shapeName === 'code');
+            if (window.__onCodeModeChanged) window.__onCodeModeChanged(shapeName === 'code');
         };
     }
 
