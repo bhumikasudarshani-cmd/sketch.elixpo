@@ -99,8 +99,10 @@ const useSketchStore = create((set, get) => ({
   getCursor: () => {
     const tool = get().activeTool
     if (tool === TOOLS.ERASER) {
-      // Return custom eraser cursor data URI
       return `url("data:image/svg+xml;base64,${typeof btoa !== 'undefined' ? btoa('<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7" fill="#222" stroke="white" stroke-width="2"/></svg>') : ''}") 10 10, auto`
+    }
+    if (tool === TOOLS.LASER) {
+      return `url("data:image/svg+xml;base64,${typeof btoa !== 'undefined' ? btoa('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="red" opacity="0.9"/><circle cx="12" cy="12" r="7" fill="none" stroke="red" stroke-width="1.5" opacity="0.5"/><circle cx="12" cy="12" r="10" fill="none" stroke="red" stroke-width="0.75" opacity="0.25"/></svg>') : ''}") 12 12, auto`
     }
     return TOOL_CURSORS[tool] || 'crosshair'
   },
