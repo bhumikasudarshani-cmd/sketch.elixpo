@@ -72,15 +72,25 @@ export default function FrameSidebar() {
 
       <Divider />
 
-      {/* AI Edit — opens AI modal pre-seeded for editing this frame's diagram */}
+      {/* AI Edit / Graph Edit — opens AI modal pre-seeded for editing this frame */}
       <button
         onClick={handleAIEdit}
-        title="AI Edit"
-        className="h-9 flex items-center gap-1.5 px-3 rounded-lg text-text-muted hover:text-[#FFD700] hover:bg-white/[0.06] transition-all duration-100"
+        title={window.currentShape?._frameType === 'graph' ? 'Edit Graph' : 'AI Edit'}
+        className={`h-9 flex items-center gap-1.5 px-3 rounded-lg text-text-muted transition-all duration-100 ${
+          window.currentShape?._frameType === 'graph'
+            ? 'hover:text-[#4A90D9] hover:bg-[#4A90D9]/10'
+            : 'hover:text-[#FFD700] hover:bg-white/[0.06]'
+        }`}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-          <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
-        </svg>
+        {window.currentShape?._frameType === 'graph' ? (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+        ) : (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z" />
+          </svg>
+        )}
       </button>
     </ShapeSidebar>
   )

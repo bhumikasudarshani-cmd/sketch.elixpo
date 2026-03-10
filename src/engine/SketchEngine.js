@@ -281,6 +281,10 @@ class SketchEngine {
             const aiRenderer = await import('./core/AIRenderer.js');
             if (aiRenderer.initAIRenderer) aiRenderer.initAIRenderer();
 
+            // Initialize graph engine bridge
+            const graphEngine = await import('./core/GraphEngine.js');
+            if (graphEngine.initGraphEngine) graphEngine.initGraphEngine();
+
             // Initialize scene serializer bridge
             const sceneSerializer = await import('./core/SceneSerializer.js');
             if (sceneSerializer.initSceneSerializer) sceneSerializer.initSceneSerializer();
