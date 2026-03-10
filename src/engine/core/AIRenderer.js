@@ -374,6 +374,7 @@ export function renderAIDiagram(diagram) {
                 const opts = {
                     stroke: edgeStroke, strokeWidth: edgeStrokeWidth, roughness: 1,
                     arrowOutlineStyle: edgeLineStyle,
+                    arrowHeadStyle: edge.arrowHeadStyle || 'default',
                 };
 
                 if (edgeStyle.type === 'curved') {

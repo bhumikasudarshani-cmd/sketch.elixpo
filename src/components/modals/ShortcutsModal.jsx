@@ -30,6 +30,8 @@ const ACTION_SHORTCUTS = [
   { keys: 'Ctrl+Shift+Z', action: 'Redo' },
   { keys: 'Esc', action: 'Deselect' },
   { keys: 'Del', action: 'Delete' },
+  { keys: 'Space', action: 'Hold to Pan' },
+  { keys: 'Shift', action: 'Straight Draw' },
 ]
 
 const VIEW_SHORTCUTS = [

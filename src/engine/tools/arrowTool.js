@@ -160,10 +160,20 @@ const handleMouseMove = (e) => {
     const { x, y } = getSVGCoordsFromMouse(e);
 
     if (isDrawingArrow && currentArrow) {
-            currentArrow.endPoint = { x, y };
+            let endX = x, endY = y;
+            if (e.shiftKey) {
+                const dx = x - currentArrow.startPoint.x;
+                const dy = y - currentArrow.startPoint.y;
+                const angle = Math.atan2(dy, dx);
+                const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                endX = currentArrow.startPoint.x + dist * Math.cos(snapAngle);
+                endY = currentArrow.startPoint.y + dist * Math.sin(snapAngle);
+            }
+            currentArrow.endPoint = { x: endX, y: endY };
 
             // Check for potential attachment and show preview
-            const nearbyShape = Arrow.findNearbyShape({ x, y });
+            const nearbyShape = Arrow.findNearbyShape({ x: endX, y: endY });
             if (nearbyShape) {
                 // Snap to attachment point
                 currentArrow.endPoint = nearbyShape.attachment.point;

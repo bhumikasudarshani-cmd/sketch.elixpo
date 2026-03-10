@@ -205,7 +205,17 @@ const handleMouseMove = (e) => {
     };
     
     if (isDrawingLine && currentLine) {
-        currentLine.endPoint = { x, y };
+        let endX = x, endY = y;
+        if (e.shiftKey) {
+            const dx = x - currentLine.startPoint.x;
+            const dy = y - currentLine.startPoint.y;
+            const angle = Math.atan2(dy, dx);
+            const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            endX = currentLine.startPoint.x + dist * Math.cos(snapAngle);
+            endY = currentLine.startPoint.y + dist * Math.sin(snapAngle);
+        }
+        currentLine.endPoint = { x: endX, y: endY };
         currentLine.draw();
         
         // Check for frame containment while drawing (but don't apply clipping yet)
