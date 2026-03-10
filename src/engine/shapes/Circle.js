@@ -82,9 +82,11 @@ class Circle {
 
     draw() {
         const childrenToRemove = [];
+        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.element && child !== this.labelElement && child !== this._hitArea) {
+                if (anchorSet && anchorSet.has(child)) continue;
                 childrenToRemove.push(child);
             }
         }
@@ -124,7 +126,7 @@ class Circle {
         this._updateLabelElement();
 
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y}) rotate(${this.rotation}, 0, 0)`);
-        if (this.isSelected) {
+        if (this.isSelected && !this._skipAnchors) {
             this.addAnchors();
         }
         if (!this.group.parentNode) {

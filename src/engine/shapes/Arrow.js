@@ -223,14 +223,16 @@ class Arrow {
 
     draw() {
         const childrenToRemove = [];
+        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.labelElement && child !== this._hitArea && child !== this._labelBg) {
+                if (anchorSet && anchorSet.has(child)) continue;
                 childrenToRemove.push(child);
             }
         }
         childrenToRemove.forEach(child => this.group.removeChild(child));
-        this.anchors = [];
+        if (!this._skipAnchors) this.anchors = [];
 
         let pathData;
         let arrowEndPoint = this.endPoint;
@@ -334,7 +336,7 @@ class Arrow {
         // Update embedded label at midpoint
         this._updateLabelElement();
 
-        if (this.isSelected) {
+        if (this.isSelected && !this._skipAnchors) {
             this.addAnchors();
             this.addAttachmentIndicators();
         }

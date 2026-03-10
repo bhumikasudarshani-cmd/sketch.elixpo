@@ -117,11 +117,13 @@ class Line {
     }
 
     draw() {
-        // Clear existing elements but preserve label and hit area
+        // Clear existing elements but preserve label, hit area, and anchors during active resize
         const childrenToRemove = [];
+        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.labelElement && child !== this._hitArea && child !== this._labelBg) {
+                if (anchorSet && anchorSet.has(child)) continue;
                 childrenToRemove.push(child);
             }
         }
@@ -182,7 +184,7 @@ class Line {
         // Update embedded label at midpoint
         this._updateLabelElement();
 
-        if (this.isSelected) {
+        if (this.isSelected && !this._skipAnchors) {
             this.addAnchors();
         }
     }

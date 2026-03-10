@@ -285,7 +285,6 @@ function handleMouseMove(e) {
         currentShape.move(dx, dy);
         startX = x;
         startY = y;
-        currentShape.draw();
     } else if (isResizingStroke && currentShape && currentShape.isSelected) {
         currentShape.updatePosition(resizingAnchorIndex, x, y);
     } else if (isRotatingStroke && currentShape && currentShape.isSelected) {
@@ -390,6 +389,10 @@ function handleMouseUp(e) {
         hoveredFrameStroke = null;
     }
     
+    // Bake accumulated move offset into point coordinates
+    if (currentShape && typeof currentShape.finalizeMove === 'function') {
+        currentShape.finalizeMove();
+    }
     isDraggingStroke = false;
     isResizingStroke = false;
     isRotatingStroke = false;

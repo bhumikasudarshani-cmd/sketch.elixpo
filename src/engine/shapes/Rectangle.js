@@ -67,13 +67,15 @@ class Rectangle {
     }
     draw() {
         const childrenToRemove = [];
+        const anchorSet = this._skipAnchors ? new Set(this.anchors) : null;
         for (let i = 0; i < this.group.children.length; i++) {
             const child = this.group.children[i];
             if (child !== this.element && child !== this.labelElement && child !== this._hitArea) {
-                 childrenToRemove.push(child);
+                if (anchorSet && anchorSet.has(child)) continue;
+                childrenToRemove.push(child);
             }
         }
-         childrenToRemove.forEach(child => this.group.removeChild(child));
+        childrenToRemove.forEach(child => this.group.removeChild(child));
 
         const optionsString = JSON.stringify(this.options);
         const isInitialDraw = this.element === null;
@@ -115,7 +117,7 @@ class Rectangle {
         const rotateCenterY = this.height / 2;
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y}) rotate(${this.rotation}, ${rotateCenterX}, ${rotateCenterY})`);
 
-        if (this.isSelected) {
+        if (this.isSelected && !this._skipAnchors) {
             this.addAnchors();
         }
         if (!this.group.parentNode) {
