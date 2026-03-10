@@ -50,7 +50,7 @@ export function parseMermaid(src) {
         let m = raw.match(/^(\w+)\(\((.+?)\)\)$/);
         if (m) { id = m[1]; label = m[2]; type = 'circle'; }
         if (!m) { m = raw.match(/^(\w+)\{(.+?)\}$/); if (m) { id = m[1]; label = m[2]; type = 'diamond'; } }
-        if (!m) { m = raw.match(/^(\w+)\((.+?)\)$/); if (m) { id = m[1]; label = m[2]; type = 'circle'; } }
+        if (!m) { m = raw.match(/^(\w+)\((.+?)\)$/); if (m) { id = m[1]; label = m[2]; type = 'roundrect'; } }
         if (!m) { m = raw.match(/^(\w+)\[(.+?)\]$/); if (m) { id = m[1]; label = m[2]; type = 'rectangle'; } }
         if (!m) { id = raw; label = raw; type = 'rectangle'; }
 
@@ -278,6 +278,8 @@ export function renderAIDiagram(diagram) {
                 shape = new window.Rectangle(cx - sz / 2, cy - sz / 2, sz, sz, nodeOpts);
                 shape.rotation = 45;
                 shape.draw();
+            } else if (node.type === 'roundrect' && window.Rectangle) {
+                shape = new window.Rectangle(nx, ny, nw, nh, { ...nodeOpts, cornerRadius: Math.min(nw, nh) * 0.2 });
             } else if (window.Rectangle) {
                 shape = new window.Rectangle(nx, ny, nw, nh, nodeOpts);
             }
@@ -982,6 +984,8 @@ export function generatePreviewSVG(diagram, width = 500, height = 350) {
         } else if (n.type === 'diamond') {
             const sz = Math.min(d.w, d.h) * 0.7;
             svgContent += `<rect x="${d.cx - sz / 2}" y="${d.cy - sz / 2}" width="${sz}" height="${sz}" fill="${nFill}" stroke="${nStroke}" stroke-width="1.5"${nDash} transform="rotate(45, ${d.cx}, ${d.cy})" />`;
+        } else if (n.type === 'roundrect') {
+            svgContent += `<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="${Math.min(d.w, d.h) * 0.2}" fill="${nFill}" stroke="${nStroke}" stroke-width="1.5"${nDash} />`;
         } else {
             svgContent += `<rect x="${d.x}" y="${d.y}" width="${d.w}" height="${d.h}" rx="4" fill="${nFill}" stroke="${nStroke}" stroke-width="1.5"${nDash} />`;
         }
@@ -1213,6 +1217,10 @@ export function initAIRenderer() {
     let _seqPreview = null;
     let _seqCanvas = null;
 
+    // Lazy-load flowchart renderer
+    let _fcPreview = null;
+    let _fcCanvas = null;
+
     async function loadSequenceRenderer() {
         if (_seqParser) return;
         const mod = await import('./MermaidSequenceParser.js');
@@ -1220,6 +1228,13 @@ export function initAIRenderer() {
         _seqParser = mod.parseSequenceDiagram;
         _seqPreview = rend.renderSequencePreviewSVG;
         _seqCanvas = rend.renderSequenceOnCanvas;
+    }
+
+    async function loadFlowchartRenderer() {
+        if (_fcPreview) return;
+        const mod = await import('./MermaidFlowchartRenderer.js');
+        _fcPreview = mod.renderFlowchartPreviewSVG;
+        _fcCanvas = mod.renderFlowchartOnCanvas;
     }
 
     // Detect if source is a sequence diagram
@@ -1234,14 +1249,8 @@ export function initAIRenderer() {
     // Unified mermaid parser: supports graph/flowchart + sequenceDiagram
     window.__mermaidParser = (src) => {
         if (isSequenceDiagram(src)) {
-            // Synchronous parse — renderer loaded lazily on first use
-            // Import synchronously since parseMermaid is sync and we need to match
             try {
-                // Dynamic import for the parser module
-                const lines = src.trim().split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('%%'));
-                // Use the eager-loaded parser if available, otherwise trigger load
                 if (_seqParser) return _seqParser(src);
-                // Fallback: trigger async load and return a marker
                 loadSequenceRenderer();
                 return { _pendingSequence: true, src };
             } catch {
@@ -1259,9 +1268,11 @@ export function initAIRenderer() {
             if (!diagram) return '';
             return _seqPreview(diagram);
         }
+        // Flowchart: use unified flowchart renderer
+        await loadFlowchartRenderer();
         const diagram = parseMermaid(src);
         if (!diagram) return '';
-        return generatePreviewSVG(diagram);
+        return _fcPreview(diagram);
     };
 
     // Unified mermaid renderer: places on canvas
@@ -1272,11 +1283,14 @@ export function initAIRenderer() {
             if (!diagram) { console.error('[AIRenderer] Sequence parse failed'); return false; }
             return _seqCanvas(diagram);
         }
+        // Flowchart: use unified flowchart renderer (same SVG as preview)
+        await loadFlowchartRenderer();
         const diagram = parseMermaid(src);
         if (!diagram) { console.error('[AIRenderer] Mermaid parse failed'); return false; }
-        return renderAIDiagram(diagram);
+        return _fcCanvas(diagram);
     };
 
-    // Pre-load sequence renderer so it's ready for sync parsing
+    // Pre-load renderers so they're ready
     loadSequenceRenderer();
+    loadFlowchartRenderer();
 }

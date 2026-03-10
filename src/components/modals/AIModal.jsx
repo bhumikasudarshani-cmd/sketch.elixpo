@@ -144,6 +144,12 @@ export default function AIModal() {
   const [graphPreviewSVG, setGraphPreviewSVG] = useState('')
   const graphDebounceRef = useRef(null)
 
+  // Mermaid mode state (side-by-side live preview)
+  const [mermaidCode, setMermaidCode] = useState('')
+  const [mermaidPreviewSVG, setMermaidPreviewSVG] = useState('')
+  const [mermaidError, setMermaidError] = useState('')
+  const mermaidDebounceRef = useRef(null)
+
   const editInputRef = useRef(null)
 
   // Auto-dismiss success toast
@@ -194,6 +200,35 @@ export default function AIModal() {
     return () => { if (graphDebounceRef.current) clearTimeout(graphDebounceRef.current) }
   }, [equations, graphSettings, mode])
 
+  // Live mermaid preview (debounced)
+  useEffect(() => {
+    if (mode !== 'mermaid') return
+    if (!mermaidCode.trim()) {
+      setMermaidPreviewSVG('')
+      setMermaidError('')
+      return
+    }
+    if (mermaidDebounceRef.current) clearTimeout(mermaidDebounceRef.current)
+    mermaidDebounceRef.current = setTimeout(async () => {
+      if (window.__mermaidPreview) {
+        try {
+          const svg = await window.__mermaidPreview(mermaidCode)
+          if (svg) {
+            setMermaidPreviewSVG(svg)
+            setMermaidError('')
+          } else {
+            setMermaidPreviewSVG('')
+            setMermaidError('Invalid syntax — check your Mermaid code')
+          }
+        } catch {
+          setMermaidPreviewSVG('')
+          setMermaidError('Parse error')
+        }
+      }
+    }, 300)
+    return () => { if (mermaidDebounceRef.current) clearTimeout(mermaidDebounceRef.current) }
+  }, [mermaidCode, mode])
+
   useEffect(() => {
     if (previewDiagram && editInputRef.current) editInputRef.current.focus()
   }, [previewDiagram])
@@ -205,6 +240,9 @@ export default function AIModal() {
     setChatHistory([])
     setPrompt('')
     setEditingFrame(null)
+    setMermaidCode('')
+    setMermaidPreviewSVG('')
+    setMermaidError('')
   }, [])
 
   const resetGraph = useCallback(() => {
@@ -380,6 +418,26 @@ export default function AIModal() {
     resetPreview()
   }, [previewDiagram, handleClose, resetPreview, editingFrame])
 
+  // --- Place mermaid ---
+  const handlePlaceMermaid = useCallback(async () => {
+    if (!mermaidCode.trim() || !mermaidPreviewSVG) return
+    handleClose()
+    if (window.__mermaidRenderer) {
+      try {
+        const success = await window.__mermaidRenderer(mermaidCode)
+        if (!success) {
+          setToast({ status: 'error', message: 'Failed to render diagram' })
+          return
+        }
+      } catch {
+        setToast({ status: 'error', message: 'Failed to render diagram' })
+        return
+      }
+    }
+    setToast({ status: 'success', message: '' })
+    resetPreview()
+  }, [mermaidCode, mermaidPreviewSVG, handleClose, resetPreview])
+
   // --- Place graph ---
   const handlePlaceGraph = useCallback(() => {
     const validEquations = equations.filter(eq => eq.expression && eq.expression.trim())
@@ -436,6 +494,7 @@ export default function AIModal() {
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       if (mode === 'graph') handlePlaceGraph()
+      else if (mode === 'mermaid') handlePlaceMermaid()
       else previewDiagram ? handlePlace() : handleGenerate()
     }
   }
@@ -491,9 +550,17 @@ export default function AIModal() {
                     </>
                   ) : (
                     <h2 className="text-text-primary text-lg font-medium flex items-center gap-2.5">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isGraphMode ? 'text-[#4A90D9]' : 'text-accent'}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isGraphMode ? 'text-[#4A90D9]' : mode === 'mermaid' ? 'text-[#2ECC71]' : 'text-accent'}>
                         {isGraphMode ? (
                           <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                        ) : mode === 'mermaid' ? (
+                          <>
+                            <rect x="3" y="3" width="7" height="7" rx="1" />
+                            <rect x="14" y="3" width="7" height="7" rx="1" />
+                            <rect x="8" y="14" width="8" height="7" rx="1" />
+                            <line x1="6.5" y1="10" x2="12" y2="14" />
+                            <line x1="17.5" y1="10" x2="12" y2="14" />
+                          </>
                         ) : (
                           <>
                             <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" />
@@ -501,7 +568,7 @@ export default function AIModal() {
                           </>
                         )}
                       </svg>
-                      {isGraphMode ? 'Graph Editor' : 'AI Diagram Generator'}
+                      {isGraphMode ? 'Graph Editor' : mode === 'mermaid' ? 'Mermaid Editor' : 'AI Diagram Generator'}
                     </h2>
                   )}
                 </div>
@@ -531,8 +598,78 @@ export default function AIModal() {
               </div>
             )}
 
-            {/* ============ GRAPH MODE ============ */}
-            {isGraphMode ? (
+            {/* ============ MERMAID MODE (side-by-side) ============ */}
+            {mode === 'mermaid' && !previewDiagram && !isFrameEdit ? (
+              <div className="flex gap-4 h-[calc(100%-100px)]">
+                {/* Left panel - Code editor */}
+                <div className="w-[45%] min-w-[280px] flex flex-col">
+                  <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Mermaid Code</p>
+                  <textarea
+                    value={mermaidCode}
+                    onChange={(e) => setMermaidCode(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Action]\n  B -->|No| D[End]\n\nsequenceDiagram\n  Alice ->> Bob: Hello\n  Bob -->> Alice: Hi!'}
+                    className="flex-1 bg-surface-dark border border-border rounded-xl px-4 py-3 text-text-primary text-sm leading-relaxed resize-none focus:outline-none focus:border-accent-blue placeholder:text-text-dim font-mono"
+                    autoFocus
+                    spellCheck={false}
+                  />
+
+                  {/* Quick examples */}
+                  <div className="mt-3 pt-3 border-t border-white/[0.06]">
+                    <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Quick Examples</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: 'Flowchart', code: 'graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Process]\n  B -->|No| D[End]\n  C --> D' },
+                        { label: 'LR Flow', code: 'graph LR\n  A[Input] --> B(Process)\n  B --> C((Output))\n  B --> D{Check}\n  D --> A' },
+                        { label: 'Sequence', code: 'sequenceDiagram\n  Alice ->> Bob: Hello Bob\n  Bob -->> Alice: Hi Alice\n  Alice ->> Bob: How are you?\n  Bob -->> Alice: Great!' },
+                      ].map((preset) => (
+                        <button
+                          key={preset.label}
+                          onClick={() => setMermaidCode(preset.code)}
+                          className="px-2 py-1 rounded-lg text-[10px] text-text-dim border border-white/[0.06] hover:border-white/[0.15] hover:text-text-secondary transition-all"
+                        >{preset.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Place button */}
+                  <div className="mt-auto pt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-text-dim text-xs">Ctrl + Enter to place</span>
+                      <button
+                        onClick={handlePlaceMermaid}
+                        disabled={!mermaidPreviewSVG}
+                        className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                          !mermaidPreviewSVG ? 'bg-surface-hover text-text-dim cursor-not-allowed' : 'bg-accent-blue text-white hover:bg-accent-blue/80'
+                        }`}
+                      >
+                        <i className="bx bx-check text-base" />
+                        Place on Canvas
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right panel - Live preview */}
+                <div className="flex-1 flex flex-col min-w-0">
+                  <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Preview</p>
+                  {mermaidError ? (
+                    <div className="flex-1 flex items-center justify-center rounded-xl bg-[#111] border border-white/[0.06]">
+                      <p className="text-red-400/70 text-sm">{mermaidError}</p>
+                    </div>
+                  ) : mermaidPreviewSVG ? (
+                    <DiagramPreview svgMarkup={mermaidPreviewSVG} className="flex-1 min-h-[300px]" />
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center rounded-xl bg-[#111] border border-white/[0.06]">
+                      <p className="text-text-dim text-sm">Type Mermaid code to see a live preview</p>
+                    </div>
+                  )}
+                  <p className="text-text-dim text-[10px] mt-1">Scroll to zoom, drag to pan</p>
+                </div>
+              </div>
+
+            ) : /* ============ GRAPH MODE ============ */
+            isGraphMode ? (
               <div className="flex gap-5 h-[calc(100%-100px)]">
                 {/* Left panel - Equations */}
                 <div className="w-[340px] min-w-[300px] flex flex-col gap-3 overflow-y-auto no-scrollbar pr-2">
