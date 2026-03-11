@@ -979,11 +979,46 @@ export function previewLixScript(parsed) {
         const stroke = props.stroke || '#fff'
         const sw = props.strokeWidth || 2
         const dash = props.style === 'dashed' ? ' stroke-dasharray="10,10"' : props.style === 'dotted' ? ' stroke-dasharray="2,8"' : ''
-        svgContent += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${stroke}" stroke-width="${sw}"${dash} marker-end="url(#arrowhead-preview)" />`
-        if (props.label) {
+        const curve = props.curve || 'straight'
+        const markerId = `ah-${def.id}`
+
+        // Per-arrow colored arrowhead marker
+        svgContent += `<defs><marker id="${markerId}" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="${stroke}" /></marker></defs>`
+
+        if (curve === 'curved') {
+          // Compute a quadratic bezier control point perpendicular to the line
           const mx = (from.x + to.x) / 2
-          const my = (from.y + to.y) / 2 - 10
-          svgContent += `<text x="${mx}" y="${my}" text-anchor="middle" fill="${props.labelColor || '#a0a0b0'}" font-size="11" font-family="sans-serif">${escapeXml(props.label)}</text>`
+          const my = (from.y + to.y) / 2
+          const dx = to.x - from.x
+          const dy = to.y - from.y
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1
+          const amt = props.curveAmount || Math.min(dist * 0.3, 80)
+          // Perpendicular offset (always curve to the same side)
+          const cpx = mx + (dy / dist) * amt
+          const cpy = my - (dx / dist) * amt
+          svgContent += `<path d="M${from.x},${from.y} Q${cpx},${cpy} ${to.x},${to.y}" stroke="${stroke}" stroke-width="${sw}" fill="none"${dash} marker-end="url(#${markerId})" />`
+          if (props.label) {
+            // Label at the curve midpoint (t=0.5 on quadratic bezier)
+            const lx = 0.25 * from.x + 0.5 * cpx + 0.25 * to.x
+            const ly = 0.25 * from.y + 0.5 * cpy + 0.25 * to.y - 8
+            svgContent += `<text x="${lx}" y="${ly}" text-anchor="middle" fill="${props.labelColor || '#a0a0b0'}" font-size="11" font-family="sans-serif">${escapeXml(props.label)}</text>`
+          }
+        } else if (curve === 'elbow') {
+          // Simple elbow: go vertical then horizontal (or vice versa)
+          const midY = from.y + (to.y - from.y) / 2
+          svgContent += `<path d="M${from.x},${from.y} L${from.x},${midY} L${to.x},${midY} L${to.x},${to.y}" stroke="${stroke}" stroke-width="${sw}" fill="none"${dash} marker-end="url(#${markerId})" />`
+          if (props.label) {
+            const lx = (from.x + to.x) / 2
+            const ly = midY - 8
+            svgContent += `<text x="${lx}" y="${ly}" text-anchor="middle" fill="${props.labelColor || '#a0a0b0'}" font-size="11" font-family="sans-serif">${escapeXml(props.label)}</text>`
+          }
+        } else {
+          svgContent += `<line x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${stroke}" stroke-width="${sw}"${dash} marker-end="url(#${markerId})" />`
+          if (props.label) {
+            const lx = (from.x + to.x) / 2
+            const ly = (from.y + to.y) / 2 - 10
+            svgContent += `<text x="${lx}" y="${ly}" text-anchor="middle" fill="${props.labelColor || '#a0a0b0'}" font-size="11" font-family="sans-serif">${escapeXml(props.label)}</text>`
+          }
         }
         break
       }
@@ -1006,11 +1041,6 @@ export function previewLixScript(parsed) {
   }
 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX - pad} ${minY - pad} ${vw} ${vh}" width="100%" height="100%" style="background: transparent;">
-    <defs>
-      <marker id="arrowhead-preview" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto" fill="#fff">
-        <polygon points="0 0, 10 3.5, 0 7" />
-      </marker>
-    </defs>
     ${svgContent}
   </svg>`
 }
