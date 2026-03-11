@@ -4,4 +4,5 @@ all_icons/
 .next/
 out/
 .env
+wrangler.toml
 plans/
