@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 
 const STORAGE_KEY = 'lixsketch-auth'
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'https://lixsketch-collab.ayushbhatt633.workers.dev'
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL
 
 function loadAuth() {
   if (typeof window === 'undefined') return null
@@ -46,9 +46,9 @@ const useAuthStore = create((set, get) => ({
 
   // Start OAuth flow — redirect to Elixpo Accounts
   login: () => {
-    const clientId = process.env.NEXT_PUBLIC_ELIXPO_CLIENT_ID || 'cli_10b156a3bd725c8332a80cdef1192d18e28dd5e9df8782a565b7e243efdd2abb'
+    const clientId = process.env.ELIXPO_AUTH_CLIENT_ID
     const appOrigin = window.location.origin
-    const redirectUri = `${WORKER_URL}/api/auth/callback?app_origin=${encodeURIComponent(appOrigin)}`
+    const redirectUri = `http://localhost:3000/api/auth/callback?app_origin=${encodeURIComponent(appOrigin)}`
     const state = crypto.randomUUID()
 
     // Store state for CSRF validation
