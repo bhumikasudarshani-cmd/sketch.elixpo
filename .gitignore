@@ -6,3 +6,6 @@ out/
 .env
 wrangler.toml
 plans/
+.wrangler
+.vscode 
+.next.vercel
