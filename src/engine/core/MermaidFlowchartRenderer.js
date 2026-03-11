@@ -106,6 +106,7 @@ export function renderFlowchartSVG(diagram, opts = {}) {
             x: nx, y: ny, w: nw, h: nh,
             cx: nx + nw / 2, cy: ny + nh / 2,
             type: n.type, label: n.label,
+            fill: n.fill, stroke: n.stroke, strokeWidth: n.strokeWidth,
         });
     });
 
