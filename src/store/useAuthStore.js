@@ -48,10 +48,10 @@ const useAuthStore = create((set, get) => ({
   login: () => {
     const clientId = process.env.NEXT_PUBLIC_ELIXPO_AUTH_CLIENT_ID
     const appOrigin = window.location.origin
-    const redirectUri = `${WORKER_URL}`
+    const redirectUri = `${appOrigin}/api/auth/callback`
     const state = crypto.randomUUID()
 
-    // Store state for CSRF validation
+    // Store state and origin for after callback
     sessionStorage.setItem('lixsketch-oauth-state', state)
 
     const authUrl = `https://accounts.elixpo.com/oauth/authorize` +
