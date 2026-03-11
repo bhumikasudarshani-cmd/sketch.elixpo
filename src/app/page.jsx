@@ -25,12 +25,14 @@ import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts'
 import useSessionID from '@/hooks/useSessionID'
 import useGuestProfile from '@/hooks/useGuestProfile'
 import useAuth from '@/hooks/useAuth'
+import useAutoSave from '@/hooks/useAutoSave'
 
 export default function Home() {
   useAuth()
   useKeyboardShortcuts()
   useSessionID()
   useGuestProfile()
+  useAutoSave()
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-black">
