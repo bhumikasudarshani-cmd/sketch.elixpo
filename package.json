@@ -11,6 +11,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260310.1",
     "@tailwindcss/postcss": "^4.2.1",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1"
@@ -18,6 +19,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "worker:dev": "wrangler dev",
+    "worker:deploy": "wrangler deploy",
+    "db:create": "wrangler d1 create lixsketch-db",
+    "db:migrate": "wrangler d1 execute lixsketch-db --file=./worker/migrations/0001_initial_schema.sql",
+    "db:migrate:local": "wrangler d1 execute lixsketch-db --local --file=./worker/migrations/0001_initial_schema.sql",
+    "kv:create": "wrangler kv namespace create LIXSKETCH_KV"
   }
 }
