@@ -29,6 +29,7 @@ import useAuth from '@/hooks/useAuth'
 import useAutoSave from '@/hooks/useAutoSave'
 import ContextMenu from '@/components/canvas/ContextMenu'
 import FindBar from '@/components/canvas/FindBar'
+import SaveStatusIndicator from '@/components/canvas/SaveStatusIndicator'
 
 export default function CanvasPage() {
   useEffect(() => {
@@ -72,6 +73,8 @@ export default function CanvasPage() {
       <ExportImageModal />
       <ContextMenu />
       <FindBar />
+
+      <SaveStatusIndicator />
 
       {/* Quick-save toast */}
       <div

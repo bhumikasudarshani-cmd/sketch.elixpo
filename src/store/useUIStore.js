@@ -136,6 +136,11 @@ const useUIStore = create((set, get) => ({
     set({ workspaceName: name })
   },
 
+  // --- Save Status ---
+  // 'idle' | 'local' | 'cloud'
+  saveStatus: 'idle',
+  setSaveStatus: (status) => set({ saveStatus: status }),
+
   // --- Session / Encryption ---
   // Key is persisted in localStorage keyed by session ID so it survives page refreshes.
   // This ensures re-saving a workspace uses the same key, keeping old share links valid.
