@@ -21,7 +21,7 @@ export default function useSessionID() {
     // Expect URL format: /c/<sessionId>
     let sessionID = null
 
-    if (segments[0] === 'c' && segments[1]) {
+    if (segments[0] === 'c' && segments[1] && segments[1] !== 'new') {
       sessionID = segments[1]
     }
 
