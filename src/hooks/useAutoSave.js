@@ -11,12 +11,57 @@ import { useProfileStore } from '@/hooks/useGuestProfile'
 
 const LOCAL_SAVE_KEY = 'lixsketch-autosave'
 const LOCAL_SAVE_META_KEY = 'lixsketch-autosave-meta'
-const SAVE_INTERVAL = 30_000 // 30 seconds
-const CLOUD_SYNC_INTERVAL = 5 * 60_000 // 5 minutes
+const SAVE_INTERVAL = 10_000 // 10 seconds
+const CLOUD_SYNC_INTERVAL = 10 * 60_000 // 10 minutes
+
+/**
+ * Trigger an immediate cloud sync from anywhere (e.g. Ctrl+S).
+ * Saves to localStorage first, then pushes to cloud if authenticated.
+ */
+export async function triggerCloudSync() {
+  if (!WORKER_URL) return
+
+  const authState = useAuthStore.getState()
+  if (!authState.isAuthenticated) return
+
+  const serializer = window.__sceneSerializer
+  const shapes = window.shapes
+  if (!serializer || !shapes) return
+
+  try {
+    const workspaceName = useUIStore.getState().workspaceName || 'Untitled'
+    const sceneData = serializer.save(workspaceName)
+    const sceneJSON = JSON.stringify(sceneData)
+
+    const key = await generateKey()
+    const encryptedData = await encrypt(sceneJSON, key)
+
+    const sessionId = getSessionID()
+    const res = await fetch(`${WORKER_URL}/api/scenes/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        encryptedData,
+        permission: 'edit',
+        workspaceName,
+        createdBy: authState.user?.id || useProfileStore.getState().profile?.id || 'anonymous',
+        ownerType: 'user',
+      }),
+    })
+
+    if (res.ok) {
+      useUIStore.getState().setSaveStatus('cloud')
+      console.log('[AutoSave] Cloud sync triggered via Ctrl+S')
+    }
+  } catch (err) {
+    console.warn('[AutoSave] Cloud sync (Ctrl+S) failed:', err)
+  }
+}
 
 /**
  * Auto-saves the scene to localStorage periodically when the user
- * is NOT in a shared collaboration room. Syncs to cloud every 5 minutes
+ * is NOT in a shared collaboration room. Syncs to cloud every 10 minutes
  * if authenticated and WORKER_URL is available.
  *
  * On page load, restores the last auto-saved scene from localStorage.
@@ -113,6 +158,11 @@ export default function useAutoSave() {
           savedAt: Date.now(),
           shapeCount: shapes.length,
         }))
+        // Mark as locally saved (only if not already cloud-synced)
+        const currentStatus = useUIStore.getState().saveStatus
+        if (currentStatus !== 'cloud') {
+          useUIStore.getState().setSaveStatus('local')
+        }
       } catch (err) {
         console.warn('[AutoSave] Local save failed:', err)
       }
@@ -173,6 +223,7 @@ export default function useAutoSave() {
         })
 
         if (res.ok) {
+          useUIStore.getState().setSaveStatus('cloud')
           console.log('[AutoSave] New workspace saved to cloud')
           // Store encryption key for this session
           useUIStore.getState().setSessionEncryptionKey?.(key)
@@ -234,6 +285,7 @@ export default function useAutoSave() {
 
         if (res.ok) {
           lastCloudSync.current = now
+          useUIStore.getState().setSaveStatus('cloud')
           console.log('[AutoSave] Cloud sync complete')
         }
       } catch (err) {
@@ -242,6 +294,18 @@ export default function useAutoSave() {
     }
 
     const interval = setInterval(syncToCloud, CLOUD_SYNC_INTERVAL)
-    return () => clearInterval(interval)
+
+    // Also sync to cloud on beforeunload
+    const handleUnload = () => {
+      // Reset the interval check so it syncs immediately
+      lastCloudSync.current = 0
+      syncToCloud()
+    }
+    window.addEventListener('beforeunload', handleUnload)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('beforeunload', handleUnload)
+    }
   }, [isInRoom])
 }

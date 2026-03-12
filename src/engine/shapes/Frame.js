@@ -390,22 +390,34 @@ move(dx, dy) {
     this.updateContainedShapes();
 }
     destroy() {
-        // Release contained shapes back to main SVG as individual shapes
+        // Delete all contained shapes along with the frame
         [...this.containedShapes].forEach(shape => {
+            // Cleanup arrow attachments for contained shape
+            if (typeof window.cleanupAttachments === 'function') {
+                window.cleanupAttachments(shape);
+            }
+
+            // Remove contained shape from DOM
             const el = shape.group || shape.element;
-            if (el) {
-                if (el.parentNode === this.clipGroup) {
-                    this.clipGroup.removeChild(el);
-                }
-                svg.appendChild(el);
+            if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
             }
-            // For sub-frames, also release their clipGroup back to main SVG
-            if (shape.shapeName === 'frame' && shape.clipGroup) {
-                if (shape.clipGroup.parentNode === this.clipGroup) {
-                    this.clipGroup.removeChild(shape.clipGroup);
+            // For sub-frames, also remove their clipGroup and recurse
+            if (shape.shapeName === 'frame') {
+                if (shape.clipGroup && shape.clipGroup.parentNode) {
+                    shape.clipGroup.parentNode.removeChild(shape.clipGroup);
                 }
-                svg.appendChild(shape.clipGroup);
+                if (shape.clipPath && shape.clipPath.parentNode) {
+                    shape.clipPath.parentNode.removeChild(shape.clipPath);
+                }
             }
+
+            // Remove from global shapes array
+            const idx = shapes.indexOf(shape);
+            if (idx > -1) {
+                shapes.splice(idx, 1);
+            }
+
             shape.parentFrame = null;
             delete shape.isBeingMovedByFrame;
         });
@@ -1286,22 +1298,34 @@ restoreToFrame(shape) {
     }
 
     destroy() {
-        // Release contained shapes back to main SVG as individual shapes
+        // Delete all contained shapes along with the frame
         [...this.containedShapes].forEach(shape => {
+            // Cleanup arrow attachments for contained shape
+            if (typeof window.cleanupAttachments === 'function') {
+                window.cleanupAttachments(shape);
+            }
+
+            // Remove contained shape from DOM
             const el = shape.group || shape.element;
-            if (el) {
-                if (el.parentNode === this.clipGroup) {
-                    this.clipGroup.removeChild(el);
-                }
-                svg.appendChild(el);
+            if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
             }
-            // For sub-frames, also release their clipGroup back to main SVG
-            if (shape.shapeName === 'frame' && shape.clipGroup) {
-                if (shape.clipGroup.parentNode === this.clipGroup) {
-                    this.clipGroup.removeChild(shape.clipGroup);
+            // For sub-frames, also remove their clipGroup and recurse
+            if (shape.shapeName === 'frame') {
+                if (shape.clipGroup && shape.clipGroup.parentNode) {
+                    shape.clipGroup.parentNode.removeChild(shape.clipGroup);
                 }
-                svg.appendChild(shape.clipGroup);
+                if (shape.clipPath && shape.clipPath.parentNode) {
+                    shape.clipPath.parentNode.removeChild(shape.clipPath);
+                }
             }
+
+            // Remove from global shapes array
+            const idx = shapes.indexOf(shape);
+            if (idx > -1) {
+                shapes.splice(idx, 1);
+            }
+
             shape.parentFrame = null;
             delete shape.isBeingMovedByFrame;
         });
