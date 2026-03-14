@@ -370,9 +370,9 @@ class SketchEngine {
             window.isCodeToolActive = true;
         }
 
-        // Auto-open file picker when image tool is activated
-        if (toolName === 'image' && window.openImageFilePicker) {
-            window.openImageFilePicker();
+        // Show image source picker when image tool is activated
+        if (toolName === 'image' && window.__showImageSourcePicker) {
+            window.__showImageSourcePicker();
         }
 
         // Set appropriate cursor for the active tool
