@@ -6,12 +6,17 @@ import {
   USER_PROMPT_TEXT,
   USER_PROMPT_MERMAID,
   USER_PROMPT_EDIT,
+  RESEARCH_PAPER_SYSTEM_PROMPT,
+  RESEARCH_PAPER_USER_PROMPT,
+  RESEARCH_PAPER_EDIT_PROMPT,
 } from '@/engine/core/ai-system-prompt.js'
 import {
   LIXSCRIPT_LLM_SPEC,
   LIXSCRIPT_USER_PROMPT,
   LIXSCRIPT_EDIT_PROMPT,
   LIXSCRIPT_MERMAID_PROMPT,
+  LIXSCRIPT_RESEARCH_PROMPT,
+  LIXSCRIPT_RESEARCH_EDIT_PROMPT,
 } from '@/lib/lixscript-llm-spec.js'
 
 const POLLINATIONS_URL = 'https://gen.pollinations.ai/v1/chat/completions'
@@ -29,14 +34,32 @@ export async function POST(request) {
       return NextResponse.json({ error: 'API key not configured' }, { status: 500 })
     }
 
-    // Determine if this is a LixScript generation request
+    // Determine generation mode
     const isLixScript = mode === 'lixscript'
+    const isResearchPaper = mode === 'research'
+    const isResearchLixScript = mode === 'research-lixscript'
 
     // Build the user message based on context
     let systemPrompt
     let userMessage
 
-    if (isLixScript) {
+    if (isResearchLixScript) {
+      // Research paper mode generating LixScript
+      systemPrompt = LIXSCRIPT_LLM_SPEC
+      if (previousLixCode) {
+        userMessage = LIXSCRIPT_RESEARCH_EDIT_PROMPT(prompt, previousLixCode)
+      } else {
+        userMessage = LIXSCRIPT_RESEARCH_PROMPT(prompt)
+      }
+    } else if (isResearchPaper) {
+      // Research paper mode generating JSON diagram
+      systemPrompt = RESEARCH_PAPER_SYSTEM_PROMPT
+      if (previousDiagram && previousDiagram.nodes) {
+        userMessage = RESEARCH_PAPER_EDIT_PROMPT(prompt, previousDiagram)
+      } else {
+        userMessage = RESEARCH_PAPER_USER_PROMPT(prompt)
+      }
+    } else if (isLixScript) {
       systemPrompt = LIXSCRIPT_LLM_SPEC
       if (previousLixCode) {
         userMessage = LIXSCRIPT_EDIT_PROMPT(prompt, previousLixCode)
@@ -57,8 +80,10 @@ export async function POST(request) {
     console.log('[AI Generate] Request:', {
       mode,
       isLixScript,
+      isResearchPaper,
+      isResearchLixScript,
       promptLength: prompt.length,
-      isEdit: isLixScript ? !!previousLixCode : !!previousDiagram,
+      isEdit: (isLixScript || isResearchLixScript) ? !!previousLixCode : !!previousDiagram,
       historyLength: history?.length || 0,
     })
 
@@ -115,8 +140,8 @@ export async function POST(request) {
 
     console.log('[AI Generate] Model output:', content.slice(0, 200))
 
-    // LixScript mode — return the code directly
-    if (isLixScript) {
+    // LixScript mode (including research-lixscript) — return the code directly
+    if (isLixScript || isResearchLixScript) {
       // Strip markdown fences if the model wrapped it
       const cleaned = content
         .replace(/```(?:lixscript|text|plaintext)?\s*/gi, '')
@@ -131,7 +156,7 @@ export async function POST(request) {
       return NextResponse.json({ lixscript: cleaned })
     }
 
-    // JSON diagram mode — parse and validate
+    // JSON diagram mode (including research paper) — parse and validate
     let diagram
     try {
       const cleaned = content
